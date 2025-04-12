@@ -24,10 +24,31 @@ async function getCurrMovies() { // Fetches the current movies from the API and 
     moviesData.results.forEach(function (movie) {
         list.innerHTML += `
             <div>
-                <h2><strong>${movie.title}</h2>
+                <h2>${movie.title}</h2>
                 <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}">
             </div>
         `;
     });
 }
-getCurrMovies();  
+getCurrMovies();
+
+document.addEventListener("DOMContentLoaded", () => {
+    const openModalButton = document.getElementById("open-login-modal");
+    const loginModal = document.getElementById("login-modal");
+    const body = document.body;
+
+    // Open the modal
+    openModalButton.addEventListener("click", () => {
+        loginModal.classList.remove("hidden");
+        body.classList.add("modal-active");
+    });
+
+    // Close the modal when clicking outside of it
+    loginModal.addEventListener("click", (event) => {
+        if (event.target === loginModal) {
+            loginModal.classList.add("hidden");
+            body.classList.remove("modal-active");
+        }
+    });
+});
+

@@ -8,9 +8,52 @@
     <script src="script.js" defer></script>
 </head>
 <body>
-    <h1>What To Watch</h1>
+    <div id="header">
+        <h1>What To Watch</h1>
+        <button id="open-login-modal">Login/Signup</button>
+    </div>
     <hr>
     <h1>Now Playing</h1>
-    <div id="movie-list"></div>
+    <div id="movie-list">
+        <!-- Movie items will be dynamically inserted here by JavaScript -->
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="hidden">
+        <form class="container">
+            <h2 class="login-title">Login</h2>
+
+            <section class="input-box">
+                <input type="text" id="username" placeholder="Username" required>
+                <i class="bx bxs-user"></i>
+            </section>
+
+            <section class="input-box">
+                <input type="password" id="password" placeholder="Password" required pattern="^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$" title="Minimum eight characters, at least one letter and one number">
+                <i class="bx bxs-lock-alt"></i>
+            </section>
+
+            <section class="remember-forgot-box">
+                <div class="remember-me">
+                    <input type="checkbox" name="remember-me" id="remember-me">
+                    <label for="remember-me">
+                        <h5>Remember me</h5>
+                    </label>
+                </div>
+                <a class="forgot-password" href="#">
+                    <h5>Forgot Password?</h5>
+                </a>
+            </section>
+
+            <button class="login-button" type="submit">
+                Login
+            </button>
+
+            <h5 class="no-account">
+                Don't have an account?
+                <a href="#" style="text-decoration: underline;">Register</a>
+            </h5>
+        </form>
+    </div>
 </body>
 </html>
