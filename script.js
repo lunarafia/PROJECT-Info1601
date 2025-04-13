@@ -35,6 +35,7 @@ getCurrMovies();
 document.addEventListener("DOMContentLoaded", () => {
     const openModalButton = document.getElementById("open-login-modal");
     const loginModal = document.getElementById("login-modal");
+    const closeModalButton = document.getElementById("close-btn");
     const body = document.body;
 
     // Open the modal
@@ -43,12 +44,22 @@ document.addEventListener("DOMContentLoaded", () => {
         body.classList.add("modal-active");
     });
 
-    // Close the modal when clicking outside of it
-    loginModal.addEventListener("click", (event) => {
-        if (event.target === loginModal) {
-            loginModal.classList.add("hidden");
-            body.classList.remove("modal-active");
+    //Clost the modal when the escape key is pressed
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !loginModal.classList.contains("hidden")) {
+            closeModal();
         }
     });
+
+    //Close the modal when close button is clicked
+    closeModalButton.addEventListener('click', () => {
+        closeModal();
+    });
+    
+    //Function to close the modal
+    function closeModal(){
+        loginModal.classList.add("hidden");
+        body.classList.remove("modal-active");
+    }
 });
 
