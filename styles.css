@@ -2,10 +2,40 @@
 body {
     background-color: black;
     color: white;
+    font-family: Verdana, sans-serif;
 }
 h1 {
     text-align: center;
 }
+
+h1 a {
+    text-align: center;
+    text-decoration: none;
+    color:white;
+}
+
+h1 a:visited{
+    text-decoration: none;
+    color: white;
+}
+
+h2 a {
+    text-decoration: none;
+    color: white;
+}
+
+h2 a:visited {
+    text-decoration: none;
+    color: white;
+}
+
+#header input[type="text"] {
+    border-radius: 12px;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    vertical-align: middle;
+}
+
 #movie-list {
     display: grid;
     justify-content: center;
