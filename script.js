@@ -35,7 +35,10 @@ getCurrMovies();
 document.addEventListener("DOMContentLoaded", () => {
     const openModalButton = document.getElementById("open-login-modal");
     const loginModal = document.getElementById("login-modal");
-    const closeModalButton = document.getElementById("close-btn");
+    const closeModalButton = document.getElementsByClassName("close-btn");
+    const registerButton = document.getElementById("show-register");
+    const registerModal = document.getElementById("register-modal");
+    const loginButton = document.getElementById("show-login");
     const body = document.body;
 
     // Open the modal
@@ -46,20 +49,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
     //Clost the modal when the escape key is pressed
     document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && !loginModal.classList.contains("hidden")) {
+        if (event.key === "Escape" && (!loginModal.classList.contains("hidden") || !registerModal.classList.contains("hidden"))) {
             closeModal();
         }
     });
 
     //Close the modal when close button is clicked
-    closeModalButton.addEventListener('click', () => {
-        closeModal();
+    Array.from(closeModalButton).forEach((button) => {
+        button.addEventListener("click", () => {
+            closeModal();
+        });
     });
     
+    // Show register form when "Register" is clicked
+    registerButton.addEventListener("click", () => {
+        console.log("Register clicked");
+        loginModal.classList.add("hidden");
+        registerModal.classList.remove("hidden");
+    });
+
+    //Show login form when "Login" is clicked
+    loginButton.addEventListener("click", () => {
+        registerModal.classList.add("hidden");
+        loginModal.classList.remove("hidden");
+    });
+
     //Function to close the modal
     function closeModal(){
+
         loginModal.classList.add("hidden");
+        registerModal.classList.add("hidden");
         body.classList.remove("modal-active");
     }
+
+    
 });
 

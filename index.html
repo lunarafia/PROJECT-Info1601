@@ -23,7 +23,7 @@
     <!-- Login Modal -->
     <div id="login-modal" class="hidden">
         <form class="container">
-            <span id="close-btn">X</span>
+            <span class="close-btn">X</span>
             <h2 class="login-title">Login</h2>
 
             <section class="input-box">
@@ -54,7 +54,25 @@
 
             <h5 class="no-account">
                 Don't have an account?
-                <a href="#" style="text-decoration: underline;">Register</a>
+                <a href="#" style="text-decoration: underline;" id="show-register">Register</a>
+            </h5>
+        </form>
+    </div>
+    <div id="register-modal" class="hidden">
+        <form class="container">
+            <span class="close-btn">X</span>
+            <h2 class="login-title">Register</h2>
+            <section class="input-box">
+                <input type="text" id="new-username" placeholder="Username" required>
+                <i class="bx bxs-user"></i>
+            </section>
+            <section class="input-box">
+                <input type="password" id="new-password" placeholder="Password" required pattern="^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$" title="Minimum eight characters, at least one letter and one number">
+                <i class="bx bxs-lock-alt"></i>
+            </section>
+            <button class="login-button" type="submit">Create Account</button>
+            <h5 class="no-account">Already have an account?
+                <a href="#" style="text-decoration: underline;" id="show-login">Login</a>
             </h5>
         </form>
     </div>
