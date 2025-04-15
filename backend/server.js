@@ -42,7 +42,7 @@ app.post('/login', express.json(), (req, res) => {
     } else {
         res.status(401).json({error: 'Invalid credentials'});
     }
-})
+});  
 //Register endpoint
 app.post('/register', express.json(), (req, res) => {
     const {username, password} = req.body;
@@ -51,4 +51,4 @@ app.post('/register', express.json(), (req, res) => {
     } else {
         res.status(400).json({error: 'Invalid Input'})
     }
-})
+});

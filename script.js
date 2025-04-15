@@ -63,7 +63,6 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Show register form when "Register" is clicked
     registerButton.addEventListener("click", () => {
-        console.log("Register clicked");
         loginModal.classList.add("hidden");
         registerModal.classList.remove("hidden");
     });
@@ -111,6 +110,28 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });    
 
+    registerModal.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const username = document.getElementById("new-username").value;
+        const password = document.getElementById("new-password").value;
+
+        const response = await fetch('http://localhost:3000/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({username, password}),
+        });
+
+        if (response.ok){
+            const data = await response.json();
+            alert(data.message);
+            closeModal();
+        } else {
+            const error = await response.json();
+            alert(error.error);
+        }
+    });
     
 });
 
