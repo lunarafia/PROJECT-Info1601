@@ -82,6 +82,35 @@ document.addEventListener("DOMContentLoaded", () => {
         body.classList.remove("modal-active");
     }
 
+    //Handles login submission
+    loginModal.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+
+        try{
+            const response = await fetch('http://localhost:3000/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({username, password})
+            });
+
+            if(response.ok){
+                const data = await response.json();
+                alert(data.message);
+                closeModal();
+            } else {
+                const error = await response.json();
+                alert(error.error);
+            }
+        } catch(err){
+            console.error('Error:', err);
+            alert('An error occurred. Please try again.');
+        }
+    });    
+
     
 });
 

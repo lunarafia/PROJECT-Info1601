@@ -27,3 +27,28 @@ app.get('/get-api-key', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
+
+//Login endpoint
+app.post('/login', express.json(), (req, res) => {
+    const {username, password} = req.body;
+
+    const validUser = {
+        username: 'bob',
+        password: 'bobpass'
+    };
+
+    if(username === validUser.username && password === validUser.password){
+        res.status(200).json({message: 'Login successful'});
+    } else {
+        res.status(401).json({error: 'Invalid credentials'});
+    }
+})
+//Register endpoint
+app.post('/register', express.json(), (req, res) => {
+    const {username, password} = req.body;
+    if(username && password){
+        res.status(201).json({message: 'Account created successfully'});
+    } else {
+        res.status(400).json({error: 'Invalid Input'})
+    }
+})
