@@ -10,9 +10,9 @@
 <body>
     <div id="header">
         <h1><a href="index.html">What To Watch</a></h1>
-        <h2><a href="watchlist.html">Watchlist</a></h2>
         <input type="text" placeholder="Search movies..">
         <button id="open-login-modal">Login/Signup</button>
+        <button id="toggle-sidebar" class="hidden">☰ Menu</button>
     </div>
     <hr>
     <h1>Now Playing</h1>
@@ -20,6 +20,14 @@
         <!-- Movie items will be dynamically inserted here by JavaScript -->
     </div>
 
+    <!--Sidebar-->
+    <div id="sidebar" class="hidden">
+        <button id="close-btn">X</button>
+        <ul>
+            <li><a href="watchlist.html">Watchlist</a></li>
+            <li><a href="index.html" id="logout">Log Out</a></li>
+        </ul>
+    </div>
     <!-- Login Modal -->
     <div id="login-modal" class="hidden">
         <form class="container">

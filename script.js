@@ -40,6 +40,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const registerModal = document.getElementById("register-modal");
     const loginButton = document.getElementById("show-login");
     const body = document.body;
+    const sidebar = document.getElementById("sidebar");
+    const toggleSidebar = document.getElementById("toggle-sidebar");
+    const logout = document.getElementById("logout");
 
     // Open the modal
     openModalButton.addEventListener("click", () => {
@@ -100,6 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.setItem('token', data.token);
             alert('Login Successful');
             closeModal();
+            checkAuth();
         } else {
             alert(data.error);
         }
@@ -127,6 +131,47 @@ document.addEventListener("DOMContentLoaded", () => {
             alert(error.error);
         }
     });
-    
+
+    function checkAuth() {
+        const token = localStorage.getItem('token');
+        const movieList = document.getElementById('movie-list');
+
+        if (token) {
+            toggleSidebar.classList.remove("hidden");
+            openModalButton.classList.add("hidden");
+        } else {
+            toggleSidebar.classList.add("hidden");
+            openModalButton.classList.remove("hidden");
+        }
+
+        document.getElementById('open-login-modal')?.addEventListener("click", () => {
+            loginModal.classList.remove("hidden");
+            body.classList.add("modal-active");
+        });
+
+    }
+
+    toggleSidebar.addEventListener("click",() => {
+        if(sidebar.classList.contains("show")){
+            sidebar.classList.remove("show");
+            sidebar.classList.add("hidden");
+        } else {
+            sidebar.classList.remove("hidden");
+            sidebar.classList.add("show");
+        }
+        
+    });
+    const closeSidebar = document.getElementById("close-btn");
+    closeSidebar.addEventListener("click", () => {
+        sidebar.classList.remove("show"); 
+        sidebar.classList.add("hidden");
+    })
+
+    logout.addEventListener("click", () => {
+        localStorage.removeItem("token");
+        alert("You have been logged out.");
+        checkAuth();
+        sidebar.classList.remove("show");
+    });
 });
 
