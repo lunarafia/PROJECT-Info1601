@@ -87,29 +87,24 @@ document.addEventListener("DOMContentLoaded", () => {
         const username = document.getElementById("username").value;
         const password = document.getElementById("password").value;
 
-        try{
-            const response = await fetch('http://localhost:3000/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({username, password})
-            });
-
-            if(response.ok){
-                const data = await response.json();
-                alert(data.message);
-                closeModal();
-            } else {
-                const error = await response.json();
-                alert(error.error);
-            }
-        } catch(err){
-            console.error('Error:', err);
-            alert('An error occurred. Please try again.');
+       const response = await fetch('http://localhost:3000/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({username, password}),
+        });
+        
+        const data = await response.json();
+        if(response.ok){
+            localStorage.setItem('token', data.token);
+            alert('Login Successful');
+            closeModal();
+        } else {
+            alert(data.error);
         }
-    });    
-
+    });
+    
     registerModal.addEventListener("submit", async (event) => {
         event.preventDefault();
         const username = document.getElementById("new-username").value;
