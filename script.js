@@ -10,7 +10,7 @@ async function fetchApiKey(){
     const response = await fetch('http://localhost:3000/get-api-key');
     const data = await response.json();
     return data.apiKey;
-}
+};
 
 async function getCurrMovies() { // Fetches the current movies from the API and displays them
     const apiKey = await fetchApiKey();
@@ -26,10 +26,104 @@ async function getCurrMovies() { // Fetches the current movies from the API and 
             <div>
                 <h2>${movie.title}</h2>
                 <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}">
+                <button onclick = 'addtoWatchList("${movie.id}", "${movie.title}", "${movie.poster_path}")'>+</button>
             </div>
         `;
     });
-}
+};
+
+async function addtoWatchList(id, title, poster){
+    const token = localStorage.getItem('token');
+    if(!token){
+        alert('You must be logged in to add movies to your watchlist');
+        return;
+    }
+    try{
+        const response = await fetch('http://localhost:3000/add-to-watchlist', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({id, title, poster}),
+        });
+
+        if(response.ok){
+            alert(`${title} has been added to your watchlist`);
+        } else {
+            const error = await response.json();
+            alert(error.message || 'Failed to add movie to watchlist');
+        }
+    } catch (error){
+        console.error('Error adding to watchlist:', error);
+    }
+};
+
+async function displayWatchList(){
+    const token = localStorage.getItem('token');
+    const container = document.getElementById('watchlist');
+
+    if(!token){
+        container.innerHTML = '<p>You must be logged in to view your watchlist</p>';
+        return;
+    }
+    try{
+        const response = await fetch('http://localhost:3000/get-watchlist', {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        const data = await response.json();
+        container.innerHTML = '';
+
+        if(data.watchlist.length === 0){
+            container.innerHTML = '<p>Your watchlist is empty</p>';
+            return;
+        }
+
+        data.watchlist.forEach((movie) => {
+            const movieDiv = document.createElement('div');
+            movieDiv.innerHTML = `
+                <h2>${movie.title}</h2>
+                <img src="https://image.tmdb.org/t/p/w500${movie.poster}" alt="${movie.title}">
+                <button onclick='removeFromWatchList("${movie.id}", "${movie.title}", "${movie.poster}")'>-</button>
+            `;
+            container.appendChild(movieDiv);
+        });
+    } catch (error){
+        console.error('Error fetching watchlist:', error);
+    }
+    
+};
+async function removeFromWatchList(id, title, poster){
+    const token = localStorage.getItem('token');
+    if(!token){
+        alert('You must be logged in to remove movies from your watchlist');
+        return;
+    }
+    try{
+        const response = await fetch('http://localhost:3000/remove-from-watchlist', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({id, title, poster}),
+        });
+
+        if(response.ok){
+            alert('Movie removed from watchlist');
+            displayWatchList();
+        } else {
+            const error = await response.json();
+            alert(error.message || 'Failed to remove movie from watchlist');
+        }
+    } catch (error){
+        console.error('Error removing from watchlist:', error);
+    }
+};
 
 async function searchMovies(){
     const apiKey = await fetchApiKey();
@@ -43,28 +137,33 @@ async function searchMovies(){
         let moviesData = await movies.json();
 
         let list = document.getElementById('movie-list');
+        let now = document.getElementById('now');
+        now.innerHTML = '';
         list.innerHTML = '';
         moviesData.results.forEach(function (movie){
             list.innerHTML += `
                 <div>
                     <h2>${movie.title}</h2>
                     <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}">
+                    <button onclick='addtoWatchList("${movie.id}", "${movie.title}", "${movie.poster_path}")'>+</button>
                 </div>
             `;
         });
     } catch (error){
         console.log('Error fetching movies:', error);
     }
-}
+};
 document.getElementById('searchInput').addEventListener('keypress', (event) => {
     if (event.key === 'Enter'){
         event.preventDefault();
         searchMovies();
     }
-})
+});
 getCurrMovies();
+displayWatchList();
 
 document.addEventListener("DOMContentLoaded", () => {
+    
     const openModalButton = document.getElementById("open-login-modal");
     const loginModal = document.getElementById("login-modal");
     const closeModalButton = document.getElementsByClassName("close-btn");

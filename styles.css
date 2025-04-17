@@ -36,27 +36,27 @@ h2 a:visited {
     vertical-align: middle;
 }
 
-#movie-list {
+#movie-list, #watchlist{
     display: grid;
     justify-content: center;
     gap: 20px;
     grid-template-columns: repeat(3, 1fr);
 }
-#movie-list h2 {
+#movie-list h2, #watchlist h2 {
     text-align: center;
 }
-#movie-list > div {
+#movie-list > div, #watchlist > div {
     flex: 0 1 calc(50% - 20px);
     box-sizing: border-box;
     text-align: center;
 }
-#movie-list img {
+#movie-list img, #watchlist img {
     width: 75%;
     height: auto;
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.75);
 }
-#movie-list img:hover{
+#movie-list img:hover, #watchlist img:hover {
     transform: scaleY(1.05);
     cursor: pointer;
     transition: 0.3s;
