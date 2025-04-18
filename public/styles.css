@@ -263,9 +263,9 @@ input[type="checkbox"] {
 }
 
 #searchInput {
-    width: 100%;
+    width: 90%;
     max-width: 470px;
-    padding-right: 35px; 
+    padding-right: 30px; 
     padding-left: 10px;
     font-size: 16px;
     border-radius: 10px;
