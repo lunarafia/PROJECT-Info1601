@@ -249,6 +249,33 @@ input[type="checkbox"] {
     transition: transform 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
     z-index: 1000;
 }
+
+#header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 20px;
+
+    max-width: 1200px; 
+    margin: 0 auto; 
+}
+
+#searchInput {
+    width: 100%;
+    max-width: 470px;
+    padding-right: 35px; 
+    padding-left: 10px;
+    font-size: 16px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    background-image: url('https://cdn-icons-png.flaticon.com/512/54/54481.png'); 
+    background-size: 14px;
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
 #sidebar ul{
     list-style: none;
     padding: 0;
