@@ -62,15 +62,26 @@ async function addtoWatchList(id, title, poster){
     }
 };
 
-async function displayWatchList(){
+async function updateRatingDisplay(element, rating, movieId) {
+    const fullStars = Math.floor(rating);
+    const halfStar = rating % 1 >= 0.5 ? "½" : "";
+    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+    element.innerHTML = `
+        ${rating}/5 ${"★".repeat(fullStars)}${halfStar}${"☆".repeat(emptyStars)}
+        <button class="edit-rating-btn" data-movie-id="${movieId}">Edit Rating</button>
+    `;
+}
+
+async function displayWatchList() {
     const token = localStorage.getItem('token');
     const container = document.getElementById('watchlist');
 
-    if(!token){
+    if (!token) {
         container.innerHTML = '<p>You must be logged in to view your watchlist</p>';
         return;
     }
-    try{
+
+    try {
         const response = await fetch('http://localhost:3000/get-watchlist', {
             method: 'GET',
             headers: {
@@ -81,25 +92,90 @@ async function displayWatchList(){
         const data = await response.json();
         container.innerHTML = '';
 
-        if(data.watchlist.length === 0){
+        if (data.watchlist.length === 0) {
             container.innerHTML = '<p>Your watchlist is empty</p>';
             return;
         }
 
         data.watchlist.forEach((movie) => {
             const movieDiv = document.createElement('div');
+            movieDiv.classList.add('movie-item');
+            movieDiv.dataset.movieId = movie.id;
+
+            const isWatched = localStorage.getItem(`watched-${movie.id}`) === 'true';
+            const storedRating = localStorage.getItem(`rating-${movie.id}`);
+
             movieDiv.innerHTML = `
                 <h2>${movie.title}</h2>
-                <img src="https://image.tmdb.org/t/p/w500${movie.poster}" alt="${movie.title}">
+                <img src="https://image.tmdb.org/t/p/w500${movie.poster}" alt="${movie.title}" onclick="showMovieDetails('${movie.id}')">
                 <button onclick='removeFromWatchList("${movie.id}", "${movie.title}", "${movie.poster}")'>-</button>
+                <div class="watched-rating-container">
+                    <div class="watched-container">
+                        <input type="checkbox" id="watched-${movie.id}" ${isWatched ? 'checked' : ''}>
+                        <label for="watched-${movie.id}">Watched</label>
+                    </div>
+                    <div class="rating-container" style="display: ${isWatched && !storedRating ? 'flex' : 'none'};">
+                        <label for="rating-${movie.id}">Rating:</label>
+                        <input type="number" id="rating-${movie.id}" min="1" max="5" placeholder="1-5">
+                    </div>
+                </div>
+                <div class="rating-display" data-movie-id="${movie.id}"></div>
             `;
+
             container.appendChild(movieDiv);
+
+            const watchedCheckbox = movieDiv.querySelector(`#watched-${movie.id}`);
+            const ratingInput = movieDiv.querySelector(`#rating-${movie.id}`);
+            const ratingContainer = movieDiv.querySelector('.rating-container');
+            const ratingDisplay = movieDiv.querySelector(`.rating-display[data-movie-id="${movie.id}"]`);
+
+            // Initial display if rating exists
+            if (storedRating && isWatched) {
+                updateRatingDisplay(ratingDisplay, storedRating, movie.id);
+                ratingContainer.style.display = 'none';
+            }
+
+            // Watched checkbox logic
+            watchedCheckbox.addEventListener('change', (event) => {
+                const isChecked = event.target.checked;
+                localStorage.setItem(`watched-${movie.id}`, isChecked);
+                ratingContainer.style.display = isChecked && !localStorage.getItem(`rating-${movie.id}`) ? 'flex' : 'none';
+                if (!isChecked) {
+                    ratingDisplay.innerHTML = '';
+                    localStorage.removeItem(`rating-${movie.id}`);
+                }
+            });
+
+            // Rating input logic
+            ratingInput.addEventListener('change', async () => {
+                const rating = parseFloat(ratingInput.value);
+                if (rating >= 1 && rating <= 5) {
+                    localStorage.setItem(`rating-${movie.id}`, rating);
+                    await updateRatingDisplay(ratingDisplay, rating, movie.id);
+                    ratingContainer.style.display = 'none';
+
+                    // Attach edit button listener
+                    const editBtn = ratingDisplay.querySelector('.edit-rating-btn');
+                    editBtn.addEventListener('click', () => {
+                        ratingContainer.style.display = 'flex';
+                        ratingInput.value = rating;
+                        ratingDisplay.innerHTML = '';
+                    });
+                }
+            });
         });
-    } catch (error){
+    } catch (error) {
         console.error('Error fetching watchlist:', error);
     }
-    
-};
+}
+
+async function updateRatingDisplay(element, rating) {
+    const fullStars = Math.floor(rating);
+    const halfStar = rating % 1 >= 0.5 ? "½" : "";
+    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+    element.textContent = `${rating}/5 ${"★".repeat(fullStars)}${halfStar}${"☆".repeat(emptyStars)}`;
+}
+
 async function removeFromWatchList(id, title, poster){
     const token = localStorage.getItem('token');
     if(!token){
@@ -367,6 +443,37 @@ async function showMovieDetails(movieId) {
         console.error('Error loading movie details:', error);
     }
 }
+
+async function handleWatchedChange(event) {
+    const movieId = event.target.closest('.movie-item').dataset.movieId;
+    const isWatched = event.target.checked;
+    localStorage.setItem(`watched-${movieId}`, isWatched);
+}
+
+async function handleRatingChange(event) {
+    const movieItem = event.target.closest('.movie-item');
+    const movieId = movieItem.dataset.movieId;
+    const rating = parseFloat(event.target.value);
+
+    if (isNaN(rating) || rating < 0 || rating > 5) {
+        alert("Please enter a valid rating between 0 and 5.");
+        return;
+    }
+
+    localStorage.setItem(`rating-${movieId}`, rating);
+
+    const ratingDisplay = movieItem.querySelector(`.rating-display[data-movie-id="${movieId}"]`);
+    if (ratingDisplay) {
+        const fullStars = Math.floor(rating);
+        const halfStar = rating % 1 >= 0.5 ? "½" : "";
+        const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+
+        const starText = "★".repeat(fullStars) + halfStar + "☆".repeat(emptyStars);
+        ratingDisplay.textContent = `${rating}/5 ${starText}`;
+    }
+}
+
+
 
 
 
