@@ -264,9 +264,15 @@ input[type="checkbox"] {
 }
 
 #searchInput {
+<<<<<<< HEAD:styles.css
     width: 100%;
     max-width: 470px;
     padding-right: 35px; 
+=======
+    width: 90%;
+    max-width: 470px;
+    padding-right: 30px; 
+>>>>>>> 66d2ffa350cfcd06eb4ae0bfc0654794da493fcc:public/styles.css
     padding-left: 10px;
     font-size: 16px;
     border-radius: 10px;
@@ -277,7 +283,10 @@ input[type="checkbox"] {
     background-repeat: no-repeat;
     background-position: right 10px center;
 }
+<<<<<<< HEAD:styles.css
 
+=======
+>>>>>>> 66d2ffa350cfcd06eb4ae0bfc0654794da493fcc:public/styles.css
 #sidebar ul{
     list-style: none;
     padding: 0;
