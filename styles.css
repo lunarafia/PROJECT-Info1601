@@ -24,6 +24,12 @@ h2 a {
     color: white;
 }
 
+#movie-list a {
+    text-decoration: none;
+    color: white;
+  }
+  
+
 h2 a:visited {
     text-decoration: none;
     color: white;
@@ -326,4 +332,95 @@ input[type="checkbox"] {
 }
 #logout{
     bottom: 0;
+}
+
+  .logo {
+    width: 100px;  
+    height: auto;
+  }
+
+  .hidden {
+    display: none;
+}
+
+#movie-details.hidden {
+    display: none;
+}
+
+#movie-details {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); 
+    width: 60%; 
+    height: 60%; 
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 20px;
+    border-radius: 16px; 
+    z-index: 1000;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    flex-direction: row;
+
+}
+
+#movie-details img {
+    width: 40%;
+    height: auto;
+    object-fit: cover; 
+}
+
+#movie-content {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+#movie-content img {
+    width: 40%;
+    height: 10%;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+#movie-content p {
+    width: 60%;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+#movie-description {
+    width: 100%;
+    overflow-y: auto;
+}
+
+#movie-description h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+#movie-description p {
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+#close-details-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: transparent;
+    color: white;
+    border: none;
+    font-size: 30px;
+    cursor: pointer;
+    padding: 5px 10px;
+}
+
+#close-details-btn:hover {
+    color: #32CDD5; 
+    transform: scale(1.2); 
+    transition: 0.3s;
 }

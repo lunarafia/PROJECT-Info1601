@@ -24,13 +24,16 @@ async function getCurrMovies() { // Fetches the current movies from the API and 
     moviesData.results.forEach(function (movie) {
         list.innerHTML += `
             <div>
-                <h2>${movie.title}</h2>
-                <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}">
-                <button onclick = 'addtoWatchList("${movie.id}", "${movie.title}", "${movie.poster_path}")'>+</button>
+                <a href="javascript:void(0)" onclick="showMovieDetails(${movie.id})">
+                    <h2>${movie.title}</h2>
+                </a>
+                <img class="movie-poster" src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}">
+                <button onclick='addtoWatchList("${movie.id}", "${movie.title}", "${movie.poster_path}")'>+</button>
             </div>
         `;
     });
 };
+
 
 async function addtoWatchList(id, title, poster){
     const token = localStorage.getItem('token');
@@ -143,23 +146,60 @@ async function searchMovies(){
         moviesData.results.forEach(function (movie){
             list.innerHTML += `
                 <div>
-                    <h2>${movie.title}</h2>
-                    <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}">
-                    <button onclick='addtoWatchList("${movie.id}", "${movie.title}", "${movie.poster_path}")'>+</button>
+                    <a href="javascript:void(0)" onclick="showMovieDetails(${movie.id})">
+                <h2>${movie.title}</h2>
+            </a>
+            <img class="movie-poster" src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}">
+            <button onclick='addtoWatchList("${movie.id}", "${movie.title}", "${movie.poster_path}")'>+</button>
                 </div>
             `;
         });
+        
+        // clickable posters
+        document.querySelectorAll('.movie-poster').forEach(poster => {
+            poster.addEventListener('click', () => {
+                const movieId = poster.dataset.id;
+                showMovieDetails(movieId);
+            });
+        });
+
     } catch (error){
         console.log('Error fetching movies:', error);
     }
 };
+
+document.addEventListener("DOMContentLoaded", () => {
+    getCurrMovies();       // Now safe to run
+    displayWatchList();    // Elements exist
+});
+
 document.getElementById('searchInput').addEventListener('keypress', (event) => {
     if (event.key === 'Enter'){
         event.preventDefault();
         searchMovies();
     }
 });
-getCurrMovies();
+
+//event listner for movie titles
+document.getElementById('movie-list').addEventListener('click', (event) => {
+    const movieId = event.target.dataset.id;
+
+    if (event.target.classList.contains('movie-poster') || event.target.classList.contains('movie-title')) {
+        showMovieDetails(movieId);
+    }
+});
+
+// document.querySelectorAll('.movie-poster').forEach(poster => {
+//     poster.addEventListener('click', () => {
+//         const movieId = poster.dataset.id;
+//         showMovieDetails(movieId);
+//     });
+// });
+
+document.getElementById('close-details-btn').addEventListener('click', () => {
+    document.getElementById('movie-details').classList.add('hidden');
+});
+
 displayWatchList();
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -305,4 +345,28 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     checkAuth();
 });
+
+async function showMovieDetails(movieId) {
+    const apiKey = await fetchApiKey();
+    const options = {
+        headers: {
+            Authorization: `Bearer ${apiKey}`,
+        },
+    };
+
+    try {
+        const response = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?language=en-US`, options);
+        const movie = await response.json();
+
+        document.getElementById('detail-title').textContent = movie.title;
+        document.getElementById('detail-poster').src = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
+        document.getElementById('detail-overview').textContent = movie.overview;
+
+        document.getElementById('movie-details').classList.remove('hidden');
+    } catch (error) {
+        console.error('Error loading movie details:', error);
+    }
+}
+
+
 
