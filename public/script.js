@@ -1,3 +1,5 @@
+const API_BASE_URL = "https://us-central1-whattowatch-4343a.cloudfunctions.net/api";
+
 const options = {
     method: 'GET',
     headers: {
@@ -7,30 +9,59 @@ const options = {
 };
 
 async function fetchApiKey(){
-    const response = await fetch('http://localhost:3000/get-api-key');
-    const data = await response.json();
-    return data.apiKey;
-};
+    try {
+        const response = await fetch(`${API_BASE_URL}/get-api-key`);
+        const data = await response.json();
+        return data.apiKey;
+    } catch (error) {
+        console.error('Error fetching API key:', error);
+        throw error;
+    }
+}
 
-async function getCurrMovies() { // Fetches the current movies from the API and displays them
-    const apiKey = await fetchApiKey();
-    options.headers.Authorization = `Bearer ${apiKey}`;
+async function getCurrMovies() {
+    try {
+        const apiKey = await fetchApiKey();
+        if (!apiKey) {
+            throw new Error('Failed to get API key');
+        }
 
-    let movies = await fetch('https://api.themoviedb.org/3/movie/now_playing?language=en-US&page=1', options);
-    let moviesData = await movies.json();
+        const options = {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'accept': 'application/json'
+            }
+        };
 
-    let list = document.getElementById('movie-list');
-    list.innerHTML = '';
-    moviesData.results.forEach(function (movie) {
-        list.innerHTML += `
-            <div>
-                <h2>${movie.title}</h2>
-                <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}">
-                <button onclick = 'addtoWatchList("${movie.id}", "${movie.title}", "${movie.poster_path}")'>+</button>
-            </div>
-        `;
-    });
-};
+        const response = await fetch('https://api.themoviedb.org/3/movie/now_playing?language=en-US&page=1', options);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const moviesData = await response.json();
+        const list = document.getElementById('movie-list');
+        list.innerHTML = '';
+        
+        if (!moviesData.results) {
+            list.innerHTML = '<p>No movies found</p>';
+            return;
+        }
+
+        moviesData.results.forEach(movie => {
+            list.innerHTML += `
+                <div>
+                    <h2>${movie.title}</h2>
+                    <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}">
+                    <button onclick="addtoWatchList('${movie.id}', '${movie.title}', '${movie.poster_path}')">+</button>
+                </div>
+            `;
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('movie-list').innerHTML = '<p>Error loading movies</p>';
+    }
+}
 
 async function addtoWatchList(id, title, poster){
     const token = localStorage.getItem('token');
@@ -39,7 +70,7 @@ async function addtoWatchList(id, title, poster){
         return;
     }
     try{
-        const response = await fetch('http://localhost:3000/add-to-watchlist', {
+        const response = await fetch(`${API_BASE_URL}/add-to-watchlist`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -63,12 +94,17 @@ async function displayWatchList(){
     const token = localStorage.getItem('token');
     const container = document.getElementById('watchlist');
 
-    if(!token){
+    if (!container) {
+        console.error('Watchlist container not found');
+        return;
+    }
+
+    if (!token) {
         container.innerHTML = '<p>You must be logged in to view your watchlist</p>';
         return;
     }
-    try{
-        const response = await fetch('http://localhost:3000/get-watchlist', {
+    try {
+        const response = await fetch(`${API_BASE_URL}/get-watchlist`, {
             method: 'GET',
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -78,7 +114,7 @@ async function displayWatchList(){
         const data = await response.json();
         container.innerHTML = '';
 
-        if(data.watchlist.length === 0){
+        if (data.watchlist.length === 0) {
             container.innerHTML = '<p>Your watchlist is empty</p>';
             return;
         }
@@ -92,11 +128,11 @@ async function displayWatchList(){
             `;
             container.appendChild(movieDiv);
         });
-    } catch (error){
+    } catch (error) {
         console.error('Error fetching watchlist:', error);
     }
-    
-};
+}
+
 async function removeFromWatchList(id, title, poster){
     const token = localStorage.getItem('token');
     if(!token){
