@@ -12,7 +12,13 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
-app.use(cors());
+const corsOptions = {
+    origin: 'https://whattowatch-4343a.web.app', // Allow this specific origin
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
+    allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+};
+
+app.use(cors(corsOptions)); // Apply CORS middleware with options
 app.use(express.json());
 
 // Root route
