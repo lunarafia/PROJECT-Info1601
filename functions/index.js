@@ -11,6 +11,7 @@ import {defineString} from 'firebase-functions/params';
 
 dotenv.config();
 const tmdbApiKey = defineString('TMDB_API_KEY');
+const jwtSecret = defineString('JWT_SECRET');
 const app = express();
 
 // Configure CORS before any routes
@@ -41,7 +42,7 @@ app.get('/get-api-key', (req, res) => {
 
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
-    const secretKey = process.env.JWT_SECRET;
+    const secretKey = jwtSecret.value();
 
     try {
         const snap = await readUserData(username);

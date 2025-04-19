@@ -140,7 +140,7 @@ async function removeFromWatchList(id, title, poster){
         return;
     }
     try{
-        const response = await fetch('http://localhost:3000/remove-from-watchlist', {
+        const response = await fetch(`${API_BASE_URL}/remove-from-watchlist`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -254,25 +254,30 @@ document.addEventListener("DOMContentLoaded", () => {
     //Handles login submission
     loginModal.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const username = document.getElementById("username").value;
-        const password = document.getElementById("password").value;
+        try {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
 
-       const response = await fetch('http://localhost:3000/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({username, password}),
-        });
-        
-        const data = await response.json();
-        if(response.ok){
-            localStorage.setItem('token', data.token);
-            alert('Login Successful');
-            closeModal();
-            checkAuth();
-        } else {
-            alert(data.error);
+            const response = await fetch(`${API_BASE_URL}/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({username, password}),
+            });
+            
+            const data = await response.json();
+            if(response.ok) {
+                localStorage.setItem('token', data.token);
+                alert('Login Successful');
+                closeModal();
+                checkAuth();
+            } else {
+                alert(data.error || 'Login failed');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            alert('Failed to login. Please try again.');
         }
     });
     
@@ -281,7 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const username = document.getElementById("new-username").value;
         const password = document.getElementById("new-password").value;
 
-        const response = await fetch('http://localhost:3000/register', {
+        const response = await fetch(`${API_BASE_URL}/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
