@@ -51,9 +51,11 @@ async function getCurrMovies() {
         moviesData.results.forEach(movie => {
             list.innerHTML += `
                 <div>
-                    <h2>${movie.title}</h2>
-                    <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}">
-                    <button onclick="addtoWatchList('${movie.id}', '${movie.title}', '${movie.poster_path}')">+</button>
+                    <a href="javascript:void(0)" onclick="showMovieDetails(${movie.id})">
+                     <h2>${movie.title}</h2>
+                 </a>
+                 <img class="movie-poster" src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}" data-movie-id="${movie.id} onclick="showMovieDetails(${movie.id})">
+                 <button onclick='addtoWatchList("${movie.id}", "${movie.title}", "${movie.poster_path}")'>+</button>
                 </div>
             `;
         });
@@ -90,7 +92,18 @@ async function addtoWatchList(id, title, poster){
     }
 };
 
-async function displayWatchList(){
+async function updateRatingDisplay(element, rating, movieID){
+    const fullStars = Math.floor(rating);
+    const halfStar = rating % 1 >= 0.5 ? "½":"";
+    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+    element.innerHTML = `
+        ${rating}/5
+        ${"★".repeat(fullStars)}${halfStar}${"☆".repeat(emptyStars)}
+            <button class="edit-rating-btn" data-movie-id="${movieID}">Edit Rating</button>
+                `;
+}
+
+async function displayWatchList() {
     const token = localStorage.getItem('token');
     const container = document.getElementById('watchlist');
 
@@ -103,6 +116,7 @@ async function displayWatchList(){
         container.innerHTML = '<p>You must be logged in to view your watchlist</p>';
         return;
     }
+
     try {
         const response = await fetch(`${API_BASE_URL}/get-watchlist`, {
             method: 'GET',
@@ -114,23 +128,68 @@ async function displayWatchList(){
         const data = await response.json();
         container.innerHTML = '';
 
-        if (data.watchlist.length === 0) {
+        if (!data.watchlist || data.watchlist.length === 0) {
             container.innerHTML = '<p>Your watchlist is empty</p>';
             return;
         }
 
         data.watchlist.forEach((movie) => {
-            const movieDiv = document.createElement('div');
-            movieDiv.innerHTML = `
-                <h2>${movie.title}</h2>
-                <img src="https://image.tmdb.org/t/p/w500${movie.poster}" alt="${movie.title}">
-                <button onclick='removeFromWatchList("${movie.id}", "${movie.title}", "${movie.poster}")'>-</button>
+            const isWatched = localStorage.getItem(`watched-${movie.id}`) === 'true';
+            const storedRating = localStorage.getItem(`rating-${movie.id}`);
+            
+            const movieElement = `
+                <div class="movie-item" data-movie-id="${movie.id}">
+                    <h2>${movie.title}</h2>
+                    <img src="https://image.tmdb.org/t/p/w500${movie.poster}" alt="${movie.title}">
+                    <button onclick="removeFromWatchList('${movie.id}', '${movie.title}', '${movie.poster}')">Remove</button>
+                    <div class="watched-rating-container">
+                        <div class="watched-container">
+                            <input type="checkbox" id="watched-${movie.id}" ${isWatched ? 'checked' : ''}>
+                            <label for="watched-${movie.id}">Watched</label>
+                        </div>
+                        ${isWatched ? `
+                            <div class="rating-container" style="display: ${!storedRating ? 'flex' : 'none'}">
+                                <label for="rating-${movie.id}">Rating:</label>
+                                <input type="number" id="rating-${movie.id}" min="0" max="5" step="0.5" value="${storedRating || ''}" placeholder="Rate (0-5)">
+                                <button onclick="submitRating('${movie.id}')">Submit</button>
+                            </div>
+                            <div class="rating-display" data-movie-id="${movie.id}">
+                                ${storedRating ? `Rating: ${storedRating}/5` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
             `;
-            container.appendChild(movieDiv);
+            
+            container.insertAdjacentHTML('beforeend', movieElement);
+
+            // Add event listeners after inserting HTML
+            const movieDiv = container.querySelector(`[data-movie-id="${movie.id}"]`);
+            const watchedCheckbox = movieDiv.querySelector(`#watched-${movie.id}`);
+            const ratingContainer = movieDiv.querySelector('.rating-container');
+            const ratingDisplay = movieDiv.querySelector('.rating-display');
+
+            watchedCheckbox.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                localStorage.setItem(`watched-${movie.id}`, isChecked);
+                if (isChecked && !storedRating) {
+                    ratingContainer.style.display = 'flex';
+                } else {
+                    ratingContainer.style.display = 'none';
+                }
+            });
         });
     } catch (error) {
         console.error('Error fetching watchlist:', error);
+        container.innerHTML = '<p>Error loading watchlist</p>';
     }
+}
+
+async function updateRatingDisplay(element, rating){
+    const fullStars = Math.floor(rating);
+    const halfStar = rating % 1 >= 0.5 ? "½":"";
+    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+    element.textContent = `${rating}/5 ${ "★".repeat(fullStars) }${ halfStar }${ "☆".repeat(emptyStars)}`;
 }
 
 async function removeFromWatchList(id, title, poster){
@@ -161,6 +220,35 @@ async function removeFromWatchList(id, title, poster){
     }
 };
 
+async function handleWatchedChange(event) {
+    const movieId = event.target.closest('.movie-item').dataset.movieId;
+    const isWatched = event.target.checked;
+    localStorage.setItem(`watched-${movieId}`, isWatched);
+}
+
+async function handleRatingChange(event) {
+    const movieItem = event.target.closest('.movie-item');
+    const movieId = movieItem.dataset.movieId;
+    const rating = parseFloat(event.target.value);
+
+    if (isNaN(rating) || rating < 0 || rating > 5) {
+        alert("Please enter a valid rating between 0 and 5.");
+        return;
+    }
+
+    localStorage.setItem(`rating-${movieId}`, rating);
+
+    const ratingDisplay = movieItem.querySelector(`.rating-display[data-movie-id="${movieId}"]`);
+    if (ratingDisplay) {
+        const fullStars = Math.floor(rating);
+        const halfStar = rating % 1 >= 0.5 ? "½" : "";
+        const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+
+        const starText = "★".repeat(fullStars) + halfStar + "☆".repeat(emptyStars);
+        ratingDisplay.textContent = `${rating}/5 ${starText}`;
+    }
+}
+
 async function searchMovies(){
     const apiKey = await fetchApiKey();
     options.headers.Authorization = `Bearer ${apiKey}`;
@@ -179,11 +267,20 @@ async function searchMovies(){
         moviesData.results.forEach(function (movie){
             list.innerHTML += `
                 <div>
-                    <h2>${movie.title}</h2>
-                    <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}">
-                    <button onclick='addtoWatchList("${movie.id}", "${movie.title}", "${movie.poster_path}")'>+</button>
+                    <a href="javascript:void(0)" onclick="showMovieDetails(${movie.id})">
+                 <h2>${movie.title}</h2>
+             </a>
+             <img class="movie-poster" src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}" data-movie-id="${movie.id} onclick="showMovieDetails(${movie.id})">
+             <button onclick='addtoWatchList("${movie.id}", "${movie.title}", "${movie.poster_path}")'>+</button>
                 </div>
             `;
+        });
+
+        document.querySelectorAll('.movie-poster').forEach(poster => {
+            poster.addEventListener('click', () => {
+                const movieID = poster.dataset.id;
+                showMovieDetails(movieID);
+            });
         });
     } catch (error){
         console.log('Error fetching movies:', error);
@@ -195,6 +292,42 @@ document.getElementById('searchInput').addEventListener('keypress', (event) => {
         searchMovies();
     }
 });
+
+document.getElementById('movie-list').addEventListener('click', (event) => {
+    if (event.target.classList.contains('movie-poster')) {
+        const movieID = event.target.dataset.movieId; // Get ID from data attribute
+        if (movieID) {
+            showMovieDetails(movieID);
+        }
+    }
+});
+
+document.getElementById('close-details-btn').addEventListener('click', () => {
+    document.getElementById('movie-details').classList.add('hidden');
+});
+
+async function showMovieDetails(movieID){
+    const apiKey = await fetchApiKey();
+    const options = {
+        headers: {
+            Authorization: `Bearer ${apiKey}`,
+        },
+    };
+
+    try {
+        const response = await fetch(`https://api.themoviedb.org/3/movie/${movieID}?language=en-US`, options);
+        const movie = await response.json();
+
+        document.getElementById('detail-title').textContent = movie.title;
+        document.getElementById('detail-poster').src = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
+        document.getElementById('detail-overview').textContent = movie.overview;
+
+        document.getElementById('movie-details').classList.remove('hidden');
+    } catch (error) {
+        console.error('Error loading movie details:', error);
+    }
+}
+
 getCurrMovies();
 displayWatchList();
 
@@ -210,6 +343,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const sidebar = document.getElementById("sidebar");
     const toggleSidebar = document.getElementById("toggle-sidebar");
     const logout = document.getElementById("logout");
+
 
     // Open the modal
     openModalButton.addEventListener("click", () => {
