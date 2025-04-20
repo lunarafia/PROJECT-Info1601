@@ -99,7 +99,7 @@ async function updateRatingDisplay(element, rating, movieID){
     element.innerHTML = `
         ${rating}/5
         ${"★".repeat(fullStars)}${halfStar}${"☆".repeat(emptyStars)}
-            <button class="edit-rating-btn" data-movie-id="${movieID}">Edit Rating</button>
+            <span class="edit-rating-btn" data-movie-id="${movieID}" title="Edit Rating">🖉</span>
                 `;
 }
 
@@ -134,63 +134,103 @@ async function displayWatchList() {
         }
 
         data.watchlist.forEach((movie) => {
+            const movieDiv = document.createElement('div');
+            movieDiv.classList.add('movie-item');
+            movieDiv.dataset.movieId = movie.id;
+
             const isWatched = localStorage.getItem(`watched-${movie.id}`) === 'true';
             const storedRating = localStorage.getItem(`rating-${movie.id}`);
-            
-            const movieElement = `
-                <div class="movie-item" data-movie-id="${movie.id}">
-                    <h2>${movie.title}</h2>
-                    <img src="https://image.tmdb.org/t/p/w500${movie.poster}" alt="${movie.title}">
-                    <button onclick="removeFromWatchList('${movie.id}', '${movie.title}', '${movie.poster}')">Remove</button>
-                    <div class="watched-rating-container">
-                        <div class="watched-container">
-                            <input type="checkbox" id="watched-${movie.id}" ${isWatched ? 'checked' : ''}>
-                            <label for="watched-${movie.id}">Watched</label>
-                        </div>
-                        ${isWatched ? `
-                            <div class="rating-container" style="display: ${!storedRating ? 'flex' : 'none'}">
-                                <label for="rating-${movie.id}">Rating:</label>
-                                <input type="number" id="rating-${movie.id}" min="0" max="5" step="0.5" value="${storedRating || ''}" placeholder="Rate (0-5)">
-                                <button onclick="submitRating('${movie.id}')">Submit</button>
-                            </div>
-                            <div class="rating-display" data-movie-id="${movie.id}">
-                                ${storedRating ? `Rating: ${storedRating}/5` : ''}
-                            </div>
-                        ` : ''}
+
+            movieDiv.innerHTML = `
+                <h2>${movie.title}</h2>
+                <img src="https://image.tmdb.org/t/p/w500${movie.poster}" alt="${movie.title}" onclick="showMovieDetails('${movie.id}')">
+                <button onclick='removeFromWatchList("${movie.id}", "${movie.title}", "${movie.poster}")'>-</button>
+                <div class="watched-rating-container">
+                    <div class="watched-container">
+                        <input type="checkbox" id="watched-${movie.id}" ${isWatched ? 'checked' : ''}>
+                        <label for="watched-${movie.id}">Watched</label>
+                    </div>
+                    <div class="rating-container" style="display: ${isWatched && !storedRating ? 'flex' : 'none'}; margin-top: 10px;">
+                        <label for="rating-${movie.id}">Rating:</label>
+                        <input type="number" id="rating-${movie.id}" min="1" max="5" placeholder="1-5">
                     </div>
                 </div>
+                <div class="rating-display" data-movie-id="${movie.id}" style="margin-top: 10px;"></div>
             `;
-            
-            container.insertAdjacentHTML('beforeend', movieElement);
 
-            // Add event listeners after inserting HTML
-            const movieDiv = container.querySelector(`[data-movie-id="${movie.id}"]`);
+            container.appendChild(movieDiv);
+
             const watchedCheckbox = movieDiv.querySelector(`#watched-${movie.id}`);
+            const ratingInput = movieDiv.querySelector(`#rating-${movie.id}`);
             const ratingContainer = movieDiv.querySelector('.rating-container');
-            const ratingDisplay = movieDiv.querySelector('.rating-display');
+            const ratingDisplay = movieDiv.querySelector(`.rating-display[data-movie-id="${movie.id}"]`);
 
-            watchedCheckbox.addEventListener('change', (e) => {
-                const isChecked = e.target.checked;
+            if (storedRating && isWatched) {
+                updateRatingDisplay(ratingDisplay, storedRating, movie.id);
+                ratingContainer.style.display = 'none';
+            }
+
+            watchedCheckbox.addEventListener('change', async (event) => {
+                const isChecked = event.target.checked;
                 localStorage.setItem(`watched-${movie.id}`, isChecked);
-                if (isChecked && !storedRating) {
-                    ratingContainer.style.display = 'flex';
-                } else {
-                    ratingContainer.style.display = 'none';
+                
+                // Add null checks
+                if (ratingContainer && ratingDisplay) {
+                    if (isChecked && !localStorage.getItem(`rating-${movie.id}`)) {
+                        ratingContainer.style.display = 'flex';
+                    } else {
+                        ratingContainer.style.display = 'none';
+                    }
+                    if (!isChecked) {
+                        ratingDisplay.innerHTML = '';
+                        localStorage.removeItem(`rating-${movie.id}`);
+                    }
                 }
             });
+
+            ratingInput.addEventListener('change', async () => {
+                const rating = parseFloat(ratingInput.value);
+                if (rating >= 1 && rating <= 5) {
+                    localStorage.setItem(`rating-${movie.id}`, rating);
+                    if (ratingDisplay && ratingContainer) {
+                        await updateRatingDisplay(ratingDisplay, rating, movie.id);
+                        ratingContainer.style.display = 'none';
+                    }
+                    // Attach edit button listener
+                    const editBtn = ratingDisplay.querySelector('.edit-rating-btn');
+                    editBtn.addEventListener('click', () => {
+                        ratingContainer.style.display = 'flex';
+                        ratingInput.value = localStorage.getItem(`rating-${movie.id}`) || '';
+                        ratingDisplay.innerHTML = '';
+
+                        // Allow re-submitting the same rating
+                        ratingInput.addEventListener('input', async () => {
+                            const updatedRating = parseFloat(ratingInput.value);
+                            if (updatedRating >= 1 && updatedRating <= 5) {
+                                localStorage.setItem(`rating-${movie.id}`, updatedRating);
+                                await updateRatingDisplay(ratingDisplay, updatedRating, movie.id);
+                                ratingContainer.style.display = 'none';
+                            }
+                        });
+                    });
+                }
+            });
+
+            // Handle initial edit icon listener
+            const initEditIcon = movieDiv.querySelector('.edit-icon');
+            if (initEditIcon) {
+                initEditIcon.addEventListener('click', () => {
+                    ratingContainer.style.display = 'flex';
+                    ratingInput.value = storedRating;
+                    ratingDisplay.innerHTML = '';
+                });
+            }
         });
     } catch (error) {
         console.error('Error fetching watchlist:', error);
-        container.innerHTML = '<p>Error loading watchlist</p>';
     }
 }
 
-async function updateRatingDisplay(element, rating){
-    const fullStars = Math.floor(rating);
-    const halfStar = rating % 1 >= 0.5 ? "½":"";
-    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
-    element.textContent = `${rating}/5 ${ "★".repeat(fullStars) }${ halfStar }${ "☆".repeat(emptyStars)}`;
-}
 
 async function removeFromWatchList(id, title, poster){
     const token = localStorage.getItem('token');
