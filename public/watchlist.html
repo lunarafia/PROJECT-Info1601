@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>What to Watch</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
     <script src="script.js" defer></script>
 </head>
@@ -12,11 +13,28 @@
         <a href="index.html">
             <img src="https://cdn.drop.media/guest/044f9e32-08a8-4021-8116-7fa20dfc2f3c.png" alt="logo" class="logo">
         </a>
+        <h1><a href="index.html">What To Watch</a></h1>
         <input type="text" placeholder="Search movies.." id="searchInput">
         <button id="toggle-sidebar">☰ Menu</button>
     </div>
     <hr>
     <h1>Watchlist</h1>
+    <div id="sort-controls">
+        <label for="sortSelect">Sort by Title:</label>
+        <select id="sortSelect">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+        </select>
+        
+        <label for="filterWatched">Filter by:</label>
+        <select id="filterWatched">
+            <option value="all">All Movies</option>
+            <option value="watched">Watched</option>
+            <option value="unwatched">Unwatched</option>
+        </select>
+    </div>
+    <div id="totals"></div>
+
     <div id="watchlist">
         <!-- Movie items will be dynamically inserted here by JavaScript -->
     </div>
