@@ -286,53 +286,17 @@ async function searchMovies(){
         console.log('Error fetching movies:', error);
     }
 };
-document.getElementById('searchInput').addEventListener('keypress', (event) => {
-    if (event.key === 'Enter'){
-        event.preventDefault();
-        searchMovies();
-    }
-});
-
-document.getElementById('movie-list').addEventListener('click', (event) => {
-    if (event.target.classList.contains('movie-poster')) {
-        const movieID = event.target.dataset.movieId; // Get ID from data attribute
-        if (movieID) {
-            showMovieDetails(movieID);
-        }
-    }
-});
-
-document.getElementById('close-details-btn').addEventListener('click', () => {
-    document.getElementById('movie-details').classList.add('hidden');
-});
-
-async function showMovieDetails(movieID){
-    const apiKey = await fetchApiKey();
-    const options = {
-        headers: {
-            Authorization: `Bearer ${apiKey}`,
-        },
-    };
-
-    try {
-        const response = await fetch(`https://api.themoviedb.org/3/movie/${movieID}?language=en-US`, options);
-        const movie = await response.json();
-
-        document.getElementById('detail-title').textContent = movie.title;
-        document.getElementById('detail-poster').src = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
-        document.getElementById('detail-overview').textContent = movie.overview;
-
-        document.getElementById('movie-details').classList.remove('hidden');
-    } catch (error) {
-        console.error('Error loading movie details:', error);
-    }
-}
-
-getCurrMovies();
-displayWatchList();
 
 document.addEventListener("DOMContentLoaded", () => {
-    
+    document.getElementById('movie-list')?.addEventListener('click', (event) => {
+        if (event.target.classList.contains('movie-poster')) {
+            const movieID = event.target.dataset.movieId;
+            if (movieID) {
+                showMovieDetails(movieID);
+            }
+        }
+    });
+
     const openModalButton = document.getElementById("open-login-modal");
     const loginModal = document.getElementById("login-modal");
     const closeModalButton = document.getElementsByClassName("close-btn");
@@ -344,6 +308,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const toggleSidebar = document.getElementById("toggle-sidebar");
     const logout = document.getElementById("logout");
 
+    // Add these event listeners here instead
+    document.getElementById('close-details-btn')?.addEventListener('click', () => {
+        document.getElementById('movie-details').classList.add('hidden');
+    });
+
+    document.getElementById('searchInput')?.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter'){
+            event.preventDefault();
+            searchMovies();
+        }
+    });
 
     // Open the modal
     openModalButton.addEventListener("click", () => {
@@ -480,4 +455,29 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     checkAuth();
 });
+
+async function showMovieDetails(movieID){
+    const apiKey = await fetchApiKey();
+    const options = {
+        headers: {
+            Authorization: `Bearer ${apiKey}`,
+        },
+    };
+
+    try {
+        const response = await fetch(`https://api.themoviedb.org/3/movie/${movieID}?language=en-US`, options);
+        const movie = await response.json();
+
+        document.getElementById('detail-title').textContent = movie.title;
+        document.getElementById('detail-poster').src = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
+        document.getElementById('detail-overview').textContent = movie.overview;
+
+        document.getElementById('movie-details').classList.remove('hidden');
+    } catch (error) {
+        console.error('Error loading movie details:', error);
+    }
+}
+
+getCurrMovies();
+displayWatchList();
 
