@@ -504,11 +504,16 @@ async function showMovieDetails(movieId) {
         document.getElementById('detail-poster').src = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
         document.getElementById('detail-overview').textContent = movie.overview;
 
+        // Show the details panel
         document.getElementById('movie-details').classList.remove('hidden');
+
+        // Add blur to background
+        document.body.classList.add('modal-active');
     } catch (error) {
         console.error('Error loading movie details:', error);
     }
 }
+
 
 document.getElementById('searchInput').addEventListener('keypress', (event) => {
     if (event.key === 'Enter'){
@@ -526,4 +531,5 @@ document.getElementById('movie-list').addEventListener('click', (event) => {
 
 document.getElementById('close-details-btn').addEventListener('click', () => {
     document.getElementById('movie-details').classList.add('hidden');
+    document.body.classList.remove('modal-active');
 });
