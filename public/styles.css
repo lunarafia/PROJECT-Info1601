@@ -102,6 +102,17 @@ body.modal-active #header {
     pointer-events: none;
 }
 
+/* Add these styles for the blur effect */
+body.details-active #movie-list,
+body.details-active #header,
+body.details-active h1,
+body.details-active hr,
+body.details-active #sidebar,
+body.details-active footer {
+    filter: blur(5px);
+    pointer-events: none;
+}
+
 /* Styles for .container */
 .container {
     width: 320px;
@@ -350,7 +361,7 @@ input[type="checkbox"] {
     transform: translate(-50%, -50%); 
     width: 60%; 
     height: 60%; 
-    background-color: rgba(0, 0, 0, 0.9);
+    background-color: rgba(0, 0, 0, 0.95); /* Slightly more opaque background */
     color: white;
     padding: 20px;
     border-radius: 16px; 

@@ -351,6 +351,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Add these event listeners here instead
     document.getElementById('close-details-btn')?.addEventListener('click', () => {
         document.getElementById('movie-details').classList.add('hidden');
+        // Remove blur class when closing details
+        document.body.classList.remove('details-active');
     });
 
     document.getElementById('searchInput')?.addEventListener('keypress', (event) => {
@@ -496,17 +498,34 @@ document.addEventListener("DOMContentLoaded", () => {
     checkAuth();
 });
 
-async function showMovieDetails(movie) {
-    const movieId = movie.id;
-    const options = {
-        method: 'GET',
-        headers: {
-            accept: 'application/json',
-            Authorization: 'Bearer YOUR_TMDB_ACCESS_TOKEN' // Replace with your token
-        }
-    };
-
+async function showMovieDetails(movieId) {
     try {
+        // Add blur class when showing details
+        document.body.classList.add('details-active');
+        
+        // First, get the API key
+        const apiKey = await fetchApiKey();
+        if (!apiKey) {
+            throw new Error('Failed to get API key');
+        }
+
+        // Set up options with the API key
+        const options = {
+            method: 'GET',
+            headers: {
+                'accept': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            }
+        };
+
+        // Fetch movie details first
+        const movieRes = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?language=en-US`, options);
+        const movie = await movieRes.json();
+        
+        if (!movie) {
+            throw new Error('Movie details not found');
+        }
+
         // Set basic details
         document.getElementById('detail-title').textContent = movie.title;
         document.getElementById('detail-poster').src = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
@@ -516,13 +535,17 @@ async function showMovieDetails(movie) {
         // Fetch cast info
         const creditsRes = await fetch(`https://api.themoviedb.org/3/movie/${movieId}/credits?language=en-US`, options);
         const creditsData = await creditsRes.json();
-        const topCast = creditsData.cast.slice(0, 5).map(actor => actor.name).join(', ');
-        document.getElementById('detail-cast').textContent = topCast || 'Cast information unavailable.';
+        
+        // Add null check for cast data
+        const topCast = creditsData?.cast 
+            ? creditsData.cast.slice(0, 5).map(actor => actor.name).join(', ')
+            : 'Cast information unavailable.';
+        document.getElementById('detail-cast').textContent = topCast;
 
         // Fetch trailer
         const videosRes = await fetch(`https://api.themoviedb.org/3/movie/${movieId}/videos?language=en-US`, options);
         const videosData = await videosRes.json();
-        const trailer = videosData.results.find(video => video.type === 'Trailer' && video.site === 'YouTube');
+        const trailer = videosData?.results?.find(video => video.type === 'Trailer' && video.site === 'YouTube');
 
         const trailerContainer = document.getElementById('trailer-container');
         trailerContainer.innerHTML = trailer
@@ -535,6 +558,7 @@ async function showMovieDetails(movie) {
 
     } catch (error) {
         console.error('Error fetching movie details:', error);
+        document.getElementById('movie-details').innerHTML = '<p>Error loading movie details. Please try again later.</p>';
     }
 }
 
