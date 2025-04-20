@@ -63,13 +63,42 @@ async function addtoWatchList(id, title, poster){
 
 async function updateRatingDisplay(element, rating, movieId) {
     const fullStars = Math.floor(rating);
-    const halfStar = rating % 1 >= 0.5 ? "½" : "";
+    const halfStar = rating % 1 >= 0.5 ? '½' : '';
     const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
-
+    
     element.innerHTML = `
-        ${rating}/5 ${"★".repeat(fullStars)}${halfStar}${"☆".repeat(emptyStars)}
-        <span class="edit-icon" data-movie-id="${movieId}" title="Edit Rating">🖉</span>
+        ${rating}/5 ${'★'.repeat(fullStars)}${halfStar}${'☆'.repeat(emptyStars)}
+        <i class="fas fa-pencil-alt edit-rating-btn" style="margin-left: 8px; cursor: pointer;" title="Edit Rating" data-movie-id="${movieId}"></i>
     `;
+
+    const editBtn = element.querySelector('.edit-rating-btn');
+    editBtn.addEventListener('click', async () => {
+        const ratingInput = element.closest('.movie-item').querySelector(`#rating-${movieId}`);
+        const ratingContainer = element.closest('.movie-item').querySelector('.rating-container');
+        ratingContainer.style.display = 'flex';
+        ratingInput.value = localStorage.getItem(`rating-${movieId}`) || '';
+        element.innerHTML = ''; // Clear the display while editing
+
+        ratingInput.addEventListener('input', async () => {
+            const updatedRatingValue = ratingInput.value.trim();
+
+            if (!/^\d+$/.test(updatedRatingValue)) {
+                console.log('Error: Use whole numbers only');
+                return;
+            }
+
+            const updatedRating = parseInt(updatedRatingValue);
+
+            if (updatedRating < 1 || updatedRating > 5) {
+                console.log('Error: Enter numbers between 1 and 5');
+                return;
+            }
+
+            localStorage.setItem(`rating-${movieId}`, updatedRating);
+            await updateRatingDisplay(element, updatedRating, movieId);
+            ratingContainer.style.display = 'none';
+        });
+    });
 }
 
 
@@ -144,46 +173,33 @@ async function displayWatchList() {
             });
 
             ratingInput.addEventListener('change', async () => {
-                const rating = parseFloat(ratingInput.value);
-                if (rating >= 1 && rating <= 5) {
-                    localStorage.setItem(`rating-${movie.id}`, rating);
-                    await updateRatingDisplay(ratingDisplay, rating, movie.id);
-                    ratingContainer.style.display = 'none';
-
-                    // Attach edit button listener
-        const editBtn = ratingDisplay.querySelector('.edit-rating-btn');
-        editBtn.addEventListener('click', () => {
-            ratingContainer.style.display = 'flex';
-            ratingInput.value = localStorage.getItem(`rating-${movie.id}`) || '';
-            ratingDisplay.innerHTML = '';
-
-            // Allow re-submitting the same rating
-            ratingInput.addEventListener('input', async () => {
-                const updatedRating = parseFloat(ratingInput.value);
-                if (updatedRating >= 1 && updatedRating <= 5) {
-                    localStorage.setItem(`rating-${movie.id}`, updatedRating);
-                    await updateRatingDisplay(ratingDisplay, updatedRating, movie.id);
-                    ratingContainer.style.display = 'none';
+                const ratingValue = ratingInput.value.trim();
+            
+                // Check if input is a whole number
+                if (!/^\d+$/.test(ratingValue)) {
+                    console.log('Error: Use whole numbers only');
+                    return;
                 }
-                    });
-                });
-            }
-        });
-
-            // Handle initial edit icon listener
-            const initEditIcon = movieDiv.querySelector('.edit-icon');
-            if (initEditIcon) {
-                initEditIcon.addEventListener('click', () => {
-                    ratingContainer.style.display = 'flex';
-                    ratingInput.value = storedRating;
-                    ratingDisplay.innerHTML = '';
-                });
-            }
+            
+                const rating = parseInt(ratingValue);
+            
+                // Check if within range
+                if (rating < 1 || rating > 5) {
+                    console.log('Error: Enter numbers between 1 and 5');
+                    return;
+                }
+            
+                localStorage.setItem(`rating-${movie.id}`, rating);
+                await updateRatingDisplay(ratingDisplay, rating, movie.id);
+                ratingContainer.style.display = 'none';
+            });
+            
         });
     } catch (error) {
         console.error('Error fetching watchlist:', error);
     }
 }
+
 
 async function removeFromWatchList(id, title, poster){
     const token = localStorage.getItem('token');
