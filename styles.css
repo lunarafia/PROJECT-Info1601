@@ -428,13 +428,13 @@ input[type="checkbox"] {
 .watched-container {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 5px;
 }
 
 .rating-container {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 5px;
 }
 
 .rating-container label {
