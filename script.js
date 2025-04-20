@@ -6,13 +6,16 @@ const options = {
     }
 };
 
+let currentTitleSort = "asc";
+let currentFilter = "all"; 
+
 async function fetchApiKey(){
     const response = await fetch('http://localhost:3000/get-api-key');
     const data = await response.json();
     return data.apiKey;
 };
 
-async function getCurrMovies() { // Fetches the current movies from the API and displays them
+async function getCurrMovies() {
     const apiKey = await fetchApiKey();
     options.headers.Authorization = `Bearer ${apiKey}`;
 
@@ -101,11 +104,29 @@ async function updateRatingDisplay(element, rating, movieId) {
     });
 }
 
+function updateTotalsDisplay(filteredMovies) {
+    const totalsContainer = document.getElementById("totals");
+    if (!totalsContainer) return;
+
+    let watchedCount = filteredMovies.filter(movie => movie.isWatched).length;
+    let notWatchedCount = filteredMovies.filter(movie => !movie.isWatched).length;
+
+    let totalLine = '';
+    if (currentFilter === "watched") {
+        totalLine = `Watched Total: ${watchedCount}`;
+    } else if (currentFilter === "unwatched") {
+        totalLine = `Not Watched Total: ${notWatchedCount}`;
+    } else {
+        totalLine = `Watched Total: ${watchedCount} | Not Watched Total: ${notWatchedCount}`;
+    }
+
+    totalsContainer.innerHTML = `<p style="text-align: center; margin-top: 20px;"><strong>${totalLine}</strong></p>`;
+}
+  
 
 async function displayWatchList() {
     const token = localStorage.getItem('token');
     const container = document.getElementById('watchlist');
-    const sortSelect = document.getElementById('sortSelect');
 
     if (!token) {
         container.innerHTML = '<p>You must be logged in to view your watchlist</p>';
@@ -125,93 +146,114 @@ async function displayWatchList() {
             container.innerHTML = '<p>Your watchlist is empty</p>';
             return;
         }
-        
-        const sortOrder = document.getElementById('sortSelect').value;
 
-        // Sort the watchlist based on the selected option
-        const sortedMovies = data.watchlist.sort((a, b) => {
+        async function applyFilter(movies) {
+            return movies
+                .map(movie => ({
+                    ...movie,
+                    isWatched: localStorage.getItem(`watched-${movie.id}`) === 'true'
+                }))
+                .filter(movie => {
+                    if (currentFilter === 'all') return true;
+                    if (currentFilter === 'watched') return movie.isWatched;
+                    if (currentFilter === 'unwatched') return !movie.isWatched;
+                    return true;
+                });
+        }
+        
+        // Usage
+        const filteredMovies = await applyFilter(data.watchlist);
+        
+
+        // Sort by title
+        const sortedMovies = filteredMovies.sort((a, b) => {
             const titleA = a.title.toUpperCase();
             const titleB = b.title.toUpperCase();
-
-            if (sortOrder === 'asc') {
-                return titleA < titleB ? -1 : titleA > titleB ? 1 : 0;
-            } else {
-                return titleA > titleB ? -1 : titleA < titleB ? 1 : 0;
-            }
+            return currentTitleSort === 'asc' 
+                ? titleA.localeCompare(titleB)
+                : titleB.localeCompare(titleA);
         });
 
-        sortedMovies.forEach((movie) => {
-            const movieDiv = document.createElement('div');
-            movieDiv.classList.add('movie-item');
-            movieDiv.dataset.movieId = movie.id;
+        // Display movies
+        if (sortedMovies.length === 0) {
+            container.innerHTML = `<p>No ${currentFilter} movies in your watchlist</p>`;
+        } else {
+            sortedMovies.forEach((movie) => {
+                const movieDiv = document.createElement('div');
+                movieDiv.classList.add('movie-item');
+                movieDiv.dataset.movieId = movie.id;
 
-            const isWatched = localStorage.getItem(`watched-${movie.id}`) === 'true';
-            const storedRating = localStorage.getItem(`rating-${movie.id}`);
+                const isWatched = movie.isWatched;
+                const storedRating = localStorage.getItem(`rating-${movie.id}`);
 
-            movieDiv.innerHTML = `
-                <h2>${movie.title}</h2>
-                <img src="https://image.tmdb.org/t/p/w500${movie.poster}" alt="${movie.title}" onclick="showMovieDetails('${movie.id}')">
-                <button onclick='removeFromWatchList("${movie.id}", "${movie.title}", "${movie.poster}")'>-</button>
-                <div class="watched-rating-container">
-                    <div class="watched-container">
-                        <input type="checkbox" id="watched-${movie.id}" ${isWatched ? 'checked' : ''}>
-                        <label for="watched-${movie.id}">Watched</label>
+                movieDiv.innerHTML = `
+                    <h2>${movie.title}</h2>
+                    <img src="https://image.tmdb.org/t/p/w500${movie.poster}" alt="${movie.title}" onclick="showMovieDetails('${movie.id}')">
+                    <button onclick='removeFromWatchList("${movie.id}", "${movie.title}", "${movie.poster}")'>-</button>
+                    <div class="watched-rating-container">
+                        <div class="watched-container">
+                            <input type="checkbox" id="watched-${movie.id}" ${isWatched ? 'checked' : ''}>
+                            <label for="watched-${movie.id}">Watched</label>
+                        </div>
+                        <div class="rating-container" style="display: ${isWatched && !storedRating ? 'flex' : 'none'}; margin-top: 10px;">
+                            <label for="rating-${movie.id}">Rating:</label>
+                            <input type="number" id="rating-${movie.id}" min="1" max="5" placeholder="1-5">
+                        </div>
                     </div>
-                    <div class="rating-container" style="display: ${isWatched && !storedRating ? 'flex' : 'none'}; margin-top: 10px;">
-                        <label for="rating-${movie.id}">Rating:</label>
-                        <input type="number" id="rating-${movie.id}" min="1" max="5" placeholder="1-5">
-                    </div>
-                </div>
-                <div class="rating-display" data-movie-id="${movie.id}" style="margin-top: 10px;"></div>
-            `;
+                    <div class="rating-display" data-movie-id="${movie.id}" style="margin-top: 10px;"></div>
+                `;
 
-            container.appendChild(movieDiv);
+                container.appendChild(movieDiv);
 
-            const watchedCheckbox = movieDiv.querySelector(`#watched-${movie.id}`);
-            const ratingInput = movieDiv.querySelector(`#rating-${movie.id}`);
-            const ratingContainer = movieDiv.querySelector('.rating-container');
-            const ratingDisplay = movieDiv.querySelector(`.rating-display[data-movie-id="${movie.id}"]`);
+                const watchedCheckbox = movieDiv.querySelector(`#watched-${movie.id}`);
+                const ratingInput = movieDiv.querySelector(`#rating-${movie.id}`);
+                const ratingContainer = movieDiv.querySelector('.rating-container');
+                const ratingDisplay = movieDiv.querySelector(`.rating-display[data-movie-id="${movie.id}"]`);
 
-            if (storedRating && isWatched) {
-                updateRatingDisplay(ratingDisplay, storedRating, movie.id);
-                ratingContainer.style.display = 'none';
-            }
-
-            watchedCheckbox.addEventListener('change', async (event) => {
-                const isChecked = event.target.checked;
-                localStorage.setItem(`watched-${movie.id}`, isChecked);
-                ratingContainer.style.display = isChecked && !localStorage.getItem(`rating-${movie.id}`) ? 'flex' : 'none';
-                if (!isChecked) {
-                    ratingDisplay.innerHTML = '';
-                    localStorage.removeItem(`rating-${movie.id}`);
+                if (storedRating && isWatched) {
+                    updateRatingDisplay(ratingDisplay, storedRating, movie.id);
+                    ratingContainer.style.display = 'none';
                 }
+
+                watchedCheckbox.addEventListener('change', async (event) => {
+                    const isChecked = event.target.checked;
+                    localStorage.setItem(`watched-${movie.id}`, isChecked);
+                    ratingContainer.style.display = isChecked && !localStorage.getItem(`rating-${movie.id}`) ? 'flex' : 'none';
+                    if (!isChecked) {
+                        ratingDisplay.innerHTML = '';
+                        localStorage.removeItem(`rating-${movie.id}`);
+                    }
+                    displayWatchList(); // Refresh to update filters
+                });
+
+                ratingInput.addEventListener('change', async () => {
+                    const ratingValue = ratingInput.value.trim();
+                
+                    if (!/^\d+$/.test(ratingValue)) {
+                        console.log('Error: Use whole numbers only');
+                        return;
+                    }
+                
+                    const rating = parseInt(ratingValue);
+                
+                    if (rating < 1 || rating > 5) {
+                        console.log('Error: Enter numbers between 1 and 5');
+                        return;
+                    }
+                
+                    localStorage.setItem(`rating-${movie.id}`, rating);
+                    await updateRatingDisplay(ratingDisplay, rating, movie.id);
+                    ratingContainer.style.display = 'none';
+                });
             });
+        }
 
-            ratingInput.addEventListener('change', async () => {
-                const ratingValue = ratingInput.value.trim();
-            
-                if (!/^\d+$/.test(ratingValue)) {
-                    console.log('Error: Use whole numbers only');
-                    return;
-                }
-            
-                const rating = parseInt(ratingValue);
-            
-                if (rating < 1 || rating > 5) {
-                    console.log('Error: Enter numbers between 1 and 5');
-                    return;
-                }
-            
-                localStorage.setItem(`rating-${movie.id}`, rating);
-                await updateRatingDisplay(ratingDisplay, rating, movie.id);
-                ratingContainer.style.display = 'none';
-            });
-        });
+        updateTotalsDisplay(filteredMovies);
+
     } catch (error) {
         console.error('Error fetching watchlist:', error);
     }
 }
-
 
 
 async function removeFromWatchList(id, title, poster){
@@ -269,7 +311,6 @@ async function searchMovies(){
             `;
         });
         
-        // clickable posters
         document.querySelectorAll('.movie-poster').forEach(poster => {
             poster.addEventListener('click', () => {
                 const movieId = poster.dataset.id;
@@ -281,47 +322,31 @@ async function searchMovies(){
         console.log('Error fetching movies:', error);
     }
 };
-sortSelect.addEventListener('change', () => {
-    console.log('Sort select changed to:', sortSelect.value);
-    displayWatchList();
-  });
 
 document.addEventListener("DOMContentLoaded", () => {
-    getCurrMovies();       // Now safe to run
-    displayWatchList();    // Elements exist
-});
-
-document.getElementById('searchInput').addEventListener('keypress', (event) => {
-    if (event.key === 'Enter'){
-        event.preventDefault();
-        searchMovies();
-    }
-});
-
-//event listner for movie titles
-document.getElementById('movie-list').addEventListener('click', (event) => {
-    const movieId = event.target.dataset.id;
-
-    if (event.target.classList.contains('movie-poster') || event.target.classList.contains('movie-title')) {
-        showMovieDetails(movieId);
-    }
-});
-
-// document.querySelectorAll('.movie-poster').forEach(poster => {
-//     poster.addEventListener('click', () => {
-//         const movieId = poster.dataset.id;
-//         showMovieDetails(movieId);
-//     });
-// });
-
-document.getElementById('close-details-btn').addEventListener('click', () => {
-    document.getElementById('movie-details').classList.add('hidden');
-});
-
-displayWatchList();
-
-document.addEventListener("DOMContentLoaded", () => {
+    // Initialize sort and filter controls
+    const sortSelect = document.getElementById("sortSelect");
+    const filterWatched = document.getElementById("filterWatched");
     
+    if (sortSelect) {
+        sortSelect.addEventListener("change", () => {
+            currentTitleSort = sortSelect.value;
+            displayWatchList();
+        });
+    }
+    
+    if (filterWatched) {
+        filterWatched.addEventListener("change", () => {
+            currentFilter = filterWatched.value;
+            displayWatchList();
+        });
+    }
+
+    // Initialize the page
+    getCurrMovies();
+    displayWatchList();
+    
+    // Rest of your existing DOMContentLoaded code...
     const openModalButton = document.getElementById("open-login-modal");
     const loginModal = document.getElementById("login-modal");
     const closeModalButton = document.getElementsByClassName("close-btn");
@@ -333,26 +358,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const toggleSidebar = document.getElementById("toggle-sidebar");
     const logout = document.getElementById("logout");
 
-    const sortSelect = document.getElementById("sortSelect");
-    
-    if (sortSelect) {
-        sortSelect.addEventListener("change", displayWatchList);
-    }
-
     // Open the modal
     openModalButton.addEventListener("click", () => {
         loginModal.classList.remove("hidden");
         body.classList.add("modal-active");
     });
 
-    //Clost the modal when the escape key is pressed
+    // Close the modal when the escape key is pressed
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape" && (!loginModal.classList.contains("hidden") || !registerModal.classList.contains("hidden"))) {
             closeModal();
         }
     });
 
-    //Close the modal when close button is clicked
+    // Close the modal when close button is clicked
     Array.from(closeModalButton).forEach((button) => {
         button.addEventListener("click", () => {
             closeModal();
@@ -365,21 +384,20 @@ document.addEventListener("DOMContentLoaded", () => {
         registerModal.classList.remove("hidden");
     });
 
-    //Show login form when "Login" is clicked
+    // Show login form when "Login" is clicked
     loginButton.addEventListener("click", () => {
         registerModal.classList.add("hidden");
         loginModal.classList.remove("hidden");
     });
 
-    //Function to close the modal
+    // Function to close the modal
     function closeModal(){
-
         loginModal.classList.add("hidden");
         registerModal.classList.add("hidden");
         body.classList.remove("modal-active");
     }
 
-    //Handles login submission
+    // Handles login submission
     loginModal.addEventListener("submit", async (event) => {
         event.preventDefault();
         const username = document.getElementById("username").value;
@@ -442,7 +460,6 @@ document.addEventListener("DOMContentLoaded", () => {
             loginModal.classList.remove("hidden");
             body.classList.add("modal-active");
         });
-
     }
 
     toggleSidebar.addEventListener("click",() => {
@@ -453,13 +470,13 @@ document.addEventListener("DOMContentLoaded", () => {
             sidebar.classList.remove("hidden");
             sidebar.classList.add("show");
         }
-        
     });
+    
     const closeSidebar = document.getElementById("close-btn");
     closeSidebar.addEventListener("click", () => {
         sidebar.classList.remove("show"); 
         sidebar.classList.add("hidden");
-    })
+    });
 
     logout.addEventListener("click", () => {
         localStorage.removeItem("token");
@@ -467,6 +484,7 @@ document.addEventListener("DOMContentLoaded", () => {
         checkAuth();
         sidebar.classList.remove("show");
     });
+    
     checkAuth();
 });
 
@@ -492,31 +510,20 @@ async function showMovieDetails(movieId) {
     }
 }
 
-async function handleWatchedChange(event) {
-    const movieId = event.target.closest('.movie-item').dataset.movieId;
-    const isWatched = event.target.checked;
-    localStorage.setItem(`watched-${movieId}`, isWatched);
-}
-
-async function handleRatingChange(event) {
-    const movieItem = event.target.closest('.movie-item');
-    const movieId = movieItem.dataset.movieId;
-    const rating = parseFloat(event.target.value);
-
-    if (isNaN(rating) || rating < 0 || rating > 5) {
-        alert("Please enter a valid rating between 0 and 5.");
-        return;
+document.getElementById('searchInput').addEventListener('keypress', (event) => {
+    if (event.key === 'Enter'){
+        event.preventDefault();
+        searchMovies();
     }
+});
 
-    localStorage.setItem(`rating-${movieId}`, rating);
-
-    const ratingDisplay = movieItem.querySelector(`.rating-display[data-movie-id="${movieId}"]`);
-    if (ratingDisplay) {
-        const fullStars = Math.floor(rating);
-        const halfStar = rating % 1 >= 0.5 ? "½" : "";
-        const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
-
-        const starText = "★".repeat(fullStars) + halfStar + "☆".repeat(emptyStars);
-        ratingDisplay.textContent = `${rating}/5 ${starText}`;
+document.getElementById('movie-list').addEventListener('click', (event) => {
+    const movieId = event.target.dataset.id;
+    if (event.target.classList.contains('movie-poster') || event.target.classList.contains('movie-title')) {
+        showMovieDetails(movieId);
     }
-}
+});
+
+document.getElementById('close-details-btn').addEventListener('click', () => {
+    document.getElementById('movie-details').classList.add('hidden');
+});
