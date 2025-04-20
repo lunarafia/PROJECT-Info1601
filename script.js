@@ -105,6 +105,7 @@ async function updateRatingDisplay(element, rating, movieId) {
 async function displayWatchList() {
     const token = localStorage.getItem('token');
     const container = document.getElementById('watchlist');
+    const sortSelect = document.getElementById('sortSelect');
 
     if (!token) {
         container.innerHTML = '<p>You must be logged in to view your watchlist</p>';
@@ -124,8 +125,22 @@ async function displayWatchList() {
             container.innerHTML = '<p>Your watchlist is empty</p>';
             return;
         }
+        
+        const sortOrder = document.getElementById('sortSelect').value;
 
-        data.watchlist.forEach((movie) => {
+        // Sort the watchlist based on the selected option
+        const sortedMovies = data.watchlist.sort((a, b) => {
+            const titleA = a.title.toUpperCase();
+            const titleB = b.title.toUpperCase();
+
+            if (sortOrder === 'asc') {
+                return titleA < titleB ? -1 : titleA > titleB ? 1 : 0;
+            } else {
+                return titleA > titleB ? -1 : titleA < titleB ? 1 : 0;
+            }
+        });
+
+        sortedMovies.forEach((movie) => {
             const movieDiv = document.createElement('div');
             movieDiv.classList.add('movie-item');
             movieDiv.dataset.movieId = movie.id;
@@ -175,7 +190,6 @@ async function displayWatchList() {
             ratingInput.addEventListener('change', async () => {
                 const ratingValue = ratingInput.value.trim();
             
-                // Check if input is a whole number
                 if (!/^\d+$/.test(ratingValue)) {
                     console.log('Error: Use whole numbers only');
                     return;
@@ -183,7 +197,6 @@ async function displayWatchList() {
             
                 const rating = parseInt(ratingValue);
             
-                // Check if within range
                 if (rating < 1 || rating > 5) {
                     console.log('Error: Enter numbers between 1 and 5');
                     return;
@@ -193,12 +206,12 @@ async function displayWatchList() {
                 await updateRatingDisplay(ratingDisplay, rating, movie.id);
                 ratingContainer.style.display = 'none';
             });
-            
         });
     } catch (error) {
         console.error('Error fetching watchlist:', error);
     }
 }
+
 
 
 async function removeFromWatchList(id, title, poster){
@@ -268,6 +281,10 @@ async function searchMovies(){
         console.log('Error fetching movies:', error);
     }
 };
+sortSelect.addEventListener('change', () => {
+    console.log('Sort select changed to:', sortSelect.value);
+    displayWatchList();
+  });
 
 document.addEventListener("DOMContentLoaded", () => {
     getCurrMovies();       // Now safe to run
@@ -315,6 +332,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const sidebar = document.getElementById("sidebar");
     const toggleSidebar = document.getElementById("toggle-sidebar");
     const logout = document.getElementById("logout");
+
+    const sortSelect = document.getElementById("sortSelect");
+    
+    if (sortSelect) {
+        sortSelect.addEventListener("change", displayWatchList);
+    }
 
     // Open the modal
     openModalButton.addEventListener("click", () => {
@@ -497,8 +520,3 @@ async function handleRatingChange(event) {
         ratingDisplay.textContent = `${rating}/5 ${starText}`;
     }
 }
-
-
-
-
-

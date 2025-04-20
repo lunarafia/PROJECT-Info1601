@@ -464,14 +464,25 @@ input[type="checkbox"] {
 
 .edit-rating-btn {
     cursor: pointer;
-    font-size: 1rem;  /* Adjust to make the pencil smaller */
-    color: #007BFF;  /* Set initial color */
-    transition: transform 0.2s ease, color 0.2s ease, text-decoration 0.2s ease;  /* Smooth transition */
+    font-size: 1rem;  
+    color: #007BFF;  
+    transition: transform 0.2s ease, color 0.2s ease, text-decoration 0.2s ease;  
 }
 
 .edit-rating-btn:hover {
-    transform: scale(1.1);  /* Slightly grow the pencil icon */
-    color: #0056b3;  /* Change color on hover */
-    text-decoration: underline;  /* Underline the pencil icon */
+    transform: scale(1.1);  
+    color: #0056b3;  
+    text-decoration: underline;  
+}
+
+#sort-controls {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin: 10px 0;
+}
+
+#sort-controls label {
+    margin-right: 10px;
 }
 
