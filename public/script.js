@@ -72,7 +72,7 @@ async function addtoWatchList(id, title, poster){
         return;
     }
     try{
-        const response = await fetch('http://localhost:3000/add-to-watchlist', {
+        const response = await fetch(`${API_BASE_URL}/add-to-watchlist`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -92,69 +92,25 @@ async function addtoWatchList(id, title, poster){
     }
 };
 
-async function updateRatingDisplay(element, rating, movieId) {
+async function updateRatingDisplay(element, rating, movieID){
     const fullStars = Math.floor(rating);
-    const halfStar = rating % 1 >= 0.5 ? '½' : '';
+    const halfStar = rating % 1 >= 0.5 ? "½":"";
     const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
-    
     element.innerHTML = `
-        ${rating}/5 ${'★'.repeat(fullStars)}${halfStar}${'☆'.repeat(emptyStars)}
-        <i class="fas fa-pencil-alt edit-rating-btn" style="margin-left: 8px; cursor: pointer;" title="Edit Rating" data-movie-id="${movieId}"></i>
-    `;
-
-    const editBtn = element.querySelector('.edit-rating-btn');
-    editBtn.addEventListener('click', async () => {
-        const ratingInput = element.closest('.movie-item').querySelector(`#rating-${movieId}`);
-        const ratingContainer = element.closest('.movie-item').querySelector('.rating-container');
-        ratingContainer.style.display = 'flex';
-        ratingInput.value = localStorage.getItem(`rating-${movieId}`) || '';
-        element.innerHTML = ''; // Clear the display while editing
-
-        ratingInput.addEventListener('input', async () => {
-            const updatedRatingValue = ratingInput.value.trim();
-
-            if (!/^\d+$/.test(updatedRatingValue)) {
-                console.log('Error: Use whole numbers only');
-                return;
-            }
-
-            const updatedRating = parseInt(updatedRatingValue);
-
-            if (updatedRating < 1 || updatedRating > 5) {
-                console.log('Error: Enter numbers between 1 and 5');
-                return;
-            }
-
-            localStorage.setItem(`rating-${movieId}`, updatedRating);
-            await updateRatingDisplay(element, updatedRating, movieId);
-            ratingContainer.style.display = 'none';
-        });
-    });
+        ${rating}/5
+        ${"★".repeat(fullStars)}${halfStar}${"☆".repeat(emptyStars)}
+            <span class="edit-rating-btn" data-movie-id="${movieID}" title="Edit Rating">🖉</span>
+                `;
 }
-
-function updateTotalsDisplay(filteredMovies) {
-    const totalsContainer = document.getElementById("totals");
-    if (!totalsContainer) return;
-
-    let watchedCount = filteredMovies.filter(movie => movie.isWatched).length;
-    let notWatchedCount = filteredMovies.filter(movie => !movie.isWatched).length;
-
-    let totalLine = '';
-    if (currentFilter === "watched") {
-        totalLine = `Watched Total: ${watchedCount}`;
-    } else if (currentFilter === "unwatched") {
-        totalLine = `Not Watched Total: ${notWatchedCount}`;
-    } else {
-        totalLine = `Watched Total: ${watchedCount} | Not Watched Total: ${notWatchedCount}`;
-    }
-
-    totalsContainer.innerHTML = `<p style="text-align: center; margin-top: 20px;"><strong>${totalLine}</strong></p>`;
-}
-  
 
 async function displayWatchList() {
     const token = localStorage.getItem('token');
     const container = document.getElementById('watchlist');
+
+    if (!container) {
+        console.error('Watchlist container not found');
+        return;
+    }
 
     if (!token) {
         container.innerHTML = '<p>You must be logged in to view your watchlist</p>';
@@ -162,122 +118,114 @@ async function displayWatchList() {
     }
 
     try {
-        const response = await fetch('http://localhost:3000/get-watchlist', {
+        const response = await fetch(`${API_BASE_URL}/get-watchlist`, {
             method: 'GET',
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
         });
 
         const data = await response.json();
         container.innerHTML = '';
 
-        if (data.watchlist.length === 0) {
+        if (!data.watchlist || data.watchlist.length === 0) {
             container.innerHTML = '<p>Your watchlist is empty</p>';
             return;
         }
 
-        async function applyFilter(movies) {
-            return movies
-                .map(movie => ({
-                    ...movie,
-                    isWatched: localStorage.getItem(`watched-${movie.id}`) === 'true'
-                }))
-                .filter(movie => {
-                    if (currentFilter === 'all') return true;
-                    if (currentFilter === 'watched') return movie.isWatched;
-                    if (currentFilter === 'unwatched') return !movie.isWatched;
-                    return true;
-                });
-        }
-        
-        // Usage
-        const filteredMovies = await applyFilter(data.watchlist);
-        
+        data.watchlist.forEach((movie) => {
+            const movieDiv = document.createElement('div');
+            movieDiv.classList.add('movie-item');
+            movieDiv.dataset.movieId = movie.id;
 
-        // Sort by title
-        const sortedMovies = filteredMovies.sort((a, b) => {
-            const titleA = a.title.toUpperCase();
-            const titleB = b.title.toUpperCase();
-            return currentTitleSort === 'asc' 
-                ? titleA.localeCompare(titleB)
-                : titleB.localeCompare(titleA);
-        });
+            const isWatched = localStorage.getItem(`watched-${movie.id}`) === 'true';
+            const storedRating = localStorage.getItem(`rating-${movie.id}`);
 
-        // Display movies
-        if (sortedMovies.length === 0) {
-            container.innerHTML = `<p>No ${currentFilter} movies in your watchlist</p>`;
-        } else {
-            sortedMovies.forEach((movie) => {
-                const movieDiv = document.createElement('div');
-                movieDiv.classList.add('movie-item');
-                movieDiv.dataset.movieId = movie.id;
-
-                const isWatched = movie.isWatched;
-                const storedRating = localStorage.getItem(`rating-${movie.id}`);
-
-                movieDiv.innerHTML = `
-                    <h2>${movie.title}</h2>
-                    <img src="https://image.tmdb.org/t/p/w500${movie.poster}" alt="${movie.title}" onclick="showMovieDetails('${movie.id}')">
-                    <button onclick='removeFromWatchList("${movie.id}", "${movie.title}", "${movie.poster}")'>-</button>
-                    <div class="watched-rating-container">
-                        <div class="watched-container">
-                            <input type="checkbox" id="watched-${movie.id}" ${isWatched ? 'checked' : ''}>
-                            <label for="watched-${movie.id}">Watched</label>
-                        </div>
-                        <div class="rating-container" style="display: ${isWatched && !storedRating ? 'flex' : 'none'}; margin-top: 10px;">
-                            <label for="rating-${movie.id}">Rating:</label>
-                            <input type="number" id="rating-${movie.id}" min="1" max="5" placeholder="1-5">
-                        </div>
+            movieDiv.innerHTML = `
+                <h2>${movie.title}</h2>
+                <img src="https://image.tmdb.org/t/p/w500${movie.poster}" alt="${movie.title}" onclick="showMovieDetails('${movie.id}')">
+                <button onclick='removeFromWatchList("${movie.id}", "${movie.title}", "${movie.poster}")'>-</button>
+                <div class="watched-rating-container">
+                    <div class="watched-container">
+                        <input type="checkbox" id="watched-${movie.id}" ${isWatched ? 'checked' : ''}>
+                        <label for="watched-${movie.id}">Watched</label>
                     </div>
-                    <div class="rating-display" data-movie-id="${movie.id}" style="margin-top: 10px;"></div>
-                `;
+                    <div class="rating-container" style="display: ${isWatched && !storedRating ? 'flex' : 'none'}; margin-top: 10px;">
+                        <label for="rating-${movie.id}">Rating:</label>
+                        <input type="number" id="rating-${movie.id}" min="1" max="5" placeholder="1-5">
+                    </div>
+                </div>
+                <div class="rating-display" data-movie-id="${movie.id}" style="margin-top: 10px;"></div>
+            `;
 
-                container.appendChild(movieDiv);
+            container.appendChild(movieDiv);
 
-                const watchedCheckbox = movieDiv.querySelector(`#watched-${movie.id}`);
-                const ratingInput = movieDiv.querySelector(`#rating-${movie.id}`);
-                const ratingContainer = movieDiv.querySelector('.rating-container');
-                const ratingDisplay = movieDiv.querySelector(`.rating-display[data-movie-id="${movie.id}"]`);
+            const watchedCheckbox = movieDiv.querySelector(`#watched-${movie.id}`);
+            const ratingInput = movieDiv.querySelector(`#rating-${movie.id}`);
+            const ratingContainer = movieDiv.querySelector('.rating-container');
+            const ratingDisplay = movieDiv.querySelector(`.rating-display[data-movie-id="${movie.id}"]`);
 
-                if (storedRating && isWatched) {
-                    updateRatingDisplay(ratingDisplay, storedRating, movie.id);
-                    ratingContainer.style.display = 'none';
-                }
+            if (storedRating && isWatched) {
+                updateRatingDisplay(ratingDisplay, storedRating, movie.id);
+                ratingContainer.style.display = 'none';
+            }
 
-                watchedCheckbox.addEventListener('change', async (event) => {
-                    const isChecked = event.target.checked;
-                    localStorage.setItem(`watched-${movie.id}`, isChecked);
-                    ratingContainer.style.display = isChecked && !localStorage.getItem(`rating-${movie.id}`) ? 'flex' : 'none';
+            watchedCheckbox.addEventListener('change', async (event) => {
+                const isChecked = event.target.checked;
+                localStorage.setItem(`watched-${movie.id}`, isChecked);
+                
+                // Add null checks
+                if (ratingContainer && ratingDisplay) {
+                    if (isChecked && !localStorage.getItem(`rating-${movie.id}`)) {
+                        ratingContainer.style.display = 'flex';
+                    } else {
+                        ratingContainer.style.display = 'none';
+                    }
                     if (!isChecked) {
                         ratingDisplay.innerHTML = '';
                         localStorage.removeItem(`rating-${movie.id}`);
                     }
-                    displayWatchList(); // Refresh to update filters
-                });
-
-                ratingInput.addEventListener('change', async () => {
-                    const ratingValue = ratingInput.value.trim();
-                
-                    if (!/^\d+$/.test(ratingValue)) {
-                        console.log('Error: Use whole numbers only');
-                        return;
-                    }
-                
-                    const rating = parseInt(ratingValue);
-                
-                    if (rating < 1 || rating > 5) {
-                        console.log('Error: Enter numbers between 1 and 5');
-                        return;
-                    }
-                
-                    localStorage.setItem(`rating-${movie.id}`, rating);
-                    await updateRatingDisplay(ratingDisplay, rating, movie.id);
-                    ratingContainer.style.display = 'none';
-                });
+                }
             });
-        }
 
-        updateTotalsDisplay(filteredMovies);
+            ratingInput.addEventListener('change', async () => {
+                const rating = parseFloat(ratingInput.value);
+                if (rating >= 1 && rating <= 5) {
+                    localStorage.setItem(`rating-${movie.id}`, rating);
+                    if (ratingDisplay && ratingContainer) {
+                        await updateRatingDisplay(ratingDisplay, rating, movie.id);
+                        ratingContainer.style.display = 'none';
+                    }
+                    // Attach edit button listener
+                    const editBtn = ratingDisplay.querySelector('.edit-rating-btn');
+                    editBtn.addEventListener('click', () => {
+                        ratingContainer.style.display = 'flex';
+                        ratingInput.value = localStorage.getItem(`rating-${movie.id}`) || '';
+                        ratingDisplay.innerHTML = '';
 
+                        // Allow re-submitting the same rating
+                        ratingInput.addEventListener('input', async () => {
+                            const updatedRating = parseFloat(ratingInput.value);
+                            if (updatedRating >= 1 && updatedRating <= 5) {
+                                localStorage.setItem(`rating-${movie.id}`, updatedRating);
+                                await updateRatingDisplay(ratingDisplay, updatedRating, movie.id);
+                                ratingContainer.style.display = 'none';
+                            }
+                        });
+                    });
+                }
+            });
+
+            // Handle initial edit icon listener
+            const initEditIcon = movieDiv.querySelector('.edit-icon');
+            if (initEditIcon) {
+                initEditIcon.addEventListener('click', () => {
+                    ratingContainer.style.display = 'flex';
+                    ratingInput.value = storedRating;
+                    ratingDisplay.innerHTML = '';
+                });
+            }
+        });
     } catch (error) {
         console.error('Error fetching watchlist:', error);
     }
@@ -548,27 +496,49 @@ document.addEventListener("DOMContentLoaded", () => {
     checkAuth();
 });
 
-async function showMovieDetails(movieID){
-    const apiKey = await fetchApiKey();
+async function showMovieDetails(movie) {
+    const movieId = movie.id;
     const options = {
+        method: 'GET',
         headers: {
-            Authorization: `Bearer ${apiKey}`,
-        },
+            accept: 'application/json',
+            Authorization: 'Bearer YOUR_TMDB_ACCESS_TOKEN' // Replace with your token
+        }
     };
 
     try {
-        const response = await fetch(`https://api.themoviedb.org/3/movie/${movieID}?language=en-US`, options);
-        const movie = await response.json();
-
+        // Set basic details
         document.getElementById('detail-title').textContent = movie.title;
         document.getElementById('detail-poster').src = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
-        document.getElementById('detail-overview').textContent = movie.overview;
+        document.getElementById('detail-overview').textContent = movie.overview || 'No overview available.';
+        document.getElementById('detail-release-date').textContent = movie.release_date || 'N/A';
 
+        // Fetch cast info
+        const creditsRes = await fetch(`https://api.themoviedb.org/3/movie/${movieId}/credits?language=en-US`, options);
+        const creditsData = await creditsRes.json();
+        const topCast = creditsData.cast.slice(0, 5).map(actor => actor.name).join(', ');
+        document.getElementById('detail-cast').textContent = topCast || 'Cast information unavailable.';
+
+        // Fetch trailer
+        const videosRes = await fetch(`https://api.themoviedb.org/3/movie/${movieId}/videos?language=en-US`, options);
+        const videosData = await videosRes.json();
+        const trailer = videosData.results.find(video => video.type === 'Trailer' && video.site === 'YouTube');
+
+        const trailerContainer = document.getElementById('trailer-container');
+        trailerContainer.innerHTML = trailer
+            ? `<iframe width="560" height="315" src="https://www.youtube.com/embed/${trailer.key}" frameborder="0" allowfullscreen></iframe>`
+            : '<p>No trailer available.</p>';
+
+        // Show the detail view
         document.getElementById('movie-details').classList.remove('hidden');
+        document.getElementById('movie-details').scrollIntoView({ behavior: 'smooth' });
+
     } catch (error) {
-        console.error('Error loading movie details:', error);
+        console.error('Error fetching movie details:', error);
     }
 }
+
+
 
 getCurrMovies();
 displayWatchList();
