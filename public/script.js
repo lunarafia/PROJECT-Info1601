@@ -51,12 +51,24 @@ async function getCurrMovies() {
         moviesData.results.forEach(movie => {
             list.innerHTML += `
                 <div>
-                    <a href="javascript:void(0)" onclick="showMovieDetails(${movie.id})">
-                     <h2>${movie.title}</h2>
-                 </a>
-                 <img class="movie-poster" src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}" data-movie-id="${movie.id} onclick="showMovieDetails(${movie.id})">
-                 <button onclick='addtoWatchList("${movie.id}", "${movie.title}", "${movie.poster_path}")'>+</button>
+            <a href="javascript:void(0)" onclick="showMovieDetails(${movie.id})">
+                <h2>${movie.title}</h2>
+            </a>
+            <div class="movie-poster-container">
+                <img class="movie-poster" 
+                     src="https://image.tmdb.org/t/p/w500${movie.poster_path}" 
+                     alt="${movie.title}" 
+                     data-movie-id="${movie.id}">
+                <div class="poster-overlay">
+                    <button class="poster-button" onclick="showMovieDetails(${movie.id})">
+                         ⓘ
+                    </button>
+                    <button class="poster-button" onclick='addtoWatchList("${movie.id}", "${movie.title}", "${movie.poster_path}")'>
+                        +
+                    </button>
                 </div>
+            </div>
+        </div>
             `;
         });
     } catch (error) {
@@ -307,12 +319,24 @@ async function searchMovies(){
         moviesData.results.forEach(function (movie){
             list.innerHTML += `
                 <div>
-                    <a href="javascript:void(0)" onclick="showMovieDetails(${movie.id})">
-                 <h2>${movie.title}</h2>
-             </a>
-             <img class="movie-poster" src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}" data-movie-id="${movie.id} onclick="showMovieDetails(${movie.id})">
-             <button onclick='addtoWatchList("${movie.id}", "${movie.title}", "${movie.poster_path}")'>+</button>
+            <a href="javascript:void(0)" onclick="showMovieDetails(${movie.id})">
+                <h2>${movie.title}</h2>
+            </a>
+            <div class="movie-poster-container">
+                <img class="movie-poster" 
+                     src="https://image.tmdb.org/t/p/w500${movie.poster_path}" 
+                     alt="${movie.title}" 
+                     data-movie-id="${movie.id}">
+                <div class="poster-overlay">
+                    <button class="poster-button" onclick="showMovieDetails(${movie.id})">
+                        ⓘ
+                    </button>
+                    <button class="poster-button" onclick='addtoWatchList("${movie.id}", "${movie.title}", "${movie.poster_path}")'>
+                        +
+                    </button>
                 </div>
+            </div>
+        </div>
             `;
         });
 
