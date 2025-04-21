@@ -17,14 +17,20 @@ async function fetchApiKey(){
         console.error('Error fetching API key:', error);
         throw error;
     }
-}
+};
 
-async function getCurrMovies() {
+let currentPage = 1;
+let totalPages = null;
+
+async function getCurrMovies(page = 1) {
     try {
         const apiKey = await fetchApiKey();
         if (!apiKey) {
             throw new Error('Failed to get API key');
         }
+        
+        const list = document.getElementById('movie-list');
+        list.innerHTML = '';
 
         const options = {
             method: 'GET',
@@ -34,14 +40,14 @@ async function getCurrMovies() {
             }
         };
 
-        const response = await fetch('https://api.themoviedb.org/3/movie/now_playing?language=en-US&page=1', options);
+        const response = await fetch(`https://api.themoviedb.org/3/movie/now_playing?language=en-US&page=${page}`, options);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const moviesData = await response.json();
-        const list = document.getElementById('movie-list');
-        list.innerHTML = '';
+        totalPages = moviesData.total_pages;
+        
         
         if (!moviesData.results) {
             list.innerHTML = '<p>No movies found</p>';
@@ -71,11 +77,33 @@ async function getCurrMovies() {
         </div>
             `;
         });
+        updatePaginationButton();
+
     } catch (error) {
         console.error('Error:', error);
         document.getElementById('movie-list').innerHTML = '<p>Error loading movies</p>';
     }
-}
+    
+    
+    function updatePaginationButton(){
+        document.getElementById('prev-button').style.display = (currentPage > 1) ? 'inline-block':'none';
+        document.getElementById('next-button').style.display = (currentPage < totalPages) ? 'inline-block' : 'none';
+        document.getElementById('page-info').textContent = `Page ${currentPage}`;
+    }
+};
+function loadPrevPage(){
+        if(currentPage > 1){
+            currentPage--;
+            getCurrMovies(currentPage);
+        }
+    };
+    
+function loadNextPage(){
+        if(currentPage < totalPages){
+            currentPage++;
+            getCurrMovies(currentPage);
+        }
+    };
 
 async function addtoWatchList(id, title, poster){
     const token = localStorage.getItem('token');
@@ -111,9 +139,9 @@ async function updateRatingDisplay(element, rating, movieID){
     element.innerHTML = `
         ${rating}/5
         ${"★".repeat(fullStars)}${halfStar}${"☆".repeat(emptyStars)}
-            <span class="edit-rating-btn" data-movie-id="${movieID}" title="Edit Rating">🖉</span>
+            <span class="edit-rating-btn" data-movie-id="${movieID}" title="Edit Rating" style="cursor: pointer">🖉</span>
                 `;
-}
+};
 
 async function displayWatchList() {
     const token = localStorage.getItem('token');
@@ -241,7 +269,7 @@ async function displayWatchList() {
     } catch (error) {
         console.error('Error fetching watchlist:', error);
     }
-}
+};
 
 
 async function removeFromWatchList(id, title, poster){
@@ -276,7 +304,7 @@ async function handleWatchedChange(event) {
     const movieId = event.target.closest('.movie-item').dataset.movieId;
     const isWatched = event.target.checked;
     localStorage.setItem(`watched-${movieId}`, isWatched);
-}
+};
 
 async function handleRatingChange(event) {
     const movieItem = event.target.closest('.movie-item');
@@ -299,18 +327,27 @@ async function handleRatingChange(event) {
         const starText = "★".repeat(fullStars) + halfStar + "☆".repeat(emptyStars);
         ratingDisplay.textContent = `${rating}/5 ${starText}`;
     }
-}
+};
 
-async function searchMovies(){
+let searchPage = 1;
+let searchTotalPages = null;
+let currentSearchQuery = '';
+
+async function searchMovies(page = 1){
     const apiKey = await fetchApiKey();
     options.headers.Authorization = `Bearer ${apiKey}`;
 
     const query = document.getElementById('searchInput').value.trim();
     if (!query) return;
 
+    currentSearchQuery = query;
+    searchPage = page;
+
     try {
-        let movies = await fetch(`https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&language=en-US`, options);
+        let movies = await fetch(`https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&language=en-US&page=${page}`, options);
         let moviesData = await movies.json();
+
+        searchTotalPages = moviesData.total_pages;
 
         let list = document.getElementById('movie-list');
         let now = document.getElementById('now');
@@ -340,6 +377,8 @@ async function searchMovies(){
             `;
         });
 
+        updateSearchPaginationButtons();
+
         document.querySelectorAll('.movie-poster').forEach(poster => {
             poster.addEventListener('click', () => {
                 const movieID = poster.dataset.id;
@@ -349,7 +388,43 @@ async function searchMovies(){
     } catch (error){
         console.log('Error fetching movies:', error);
     }
+    function updateSearchPaginationButtons(){
+        document.getElementById('prev-button').style.display = (searchPage > 1) ? 'inline-block':'none';
+        document.getElementById('next-button').style.display = (searchPage < searchTotalPages) ? 'inline-block' : 'none';
+        document.getElementById('page-info').textContent = `Page ${searchPage}`;
+    }
 };
+function loadNextSearchPage(){
+    if(searchPage < searchTotalPages){
+        searchMovies(searchPage + 1);
+    }
+};
+function loadPrevSearchPage(){
+    if(searchPage > 1){
+        searchMovies(searchPage - 1);
+    }
+};
+
+getCurrMovies(currentPage);
+displayWatchList();
+
+document.getElementById('next-button').addEventListener('click', () => {
+    if (currentSearchQuery) {
+        loadNextSearchPage();
+    } else {
+        loadNextPage();
+    }
+});
+
+document.getElementById('prev-button').addEventListener('click', () => {
+    if (currentSearchQuery) {
+        loadPrevSearchPage();
+    } else {
+        loadPrevPage();
+    }
+});
+
+
 
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('movie-list')?.addEventListener('click', (event) => {
@@ -360,7 +435,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
     });
-
+   
     const openModalButton = document.getElementById("open-login-modal");
     const loginModal = document.getElementById("login-modal");
     const closeModalButton = document.getElementsByClassName("close-btn");
@@ -371,6 +446,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const sidebar = document.getElementById("sidebar");
     const toggleSidebar = document.getElementById("toggle-sidebar");
     const logout = document.getElementById("logout");
+
+   
 
     // Add these event listeners here instead
     document.getElementById('close-details-btn')?.addEventListener('click', () => {
@@ -584,10 +661,9 @@ async function showMovieDetails(movieId) {
         console.error('Error fetching movie details:', error);
         document.getElementById('movie-details').innerHTML = '<p>Error loading movie details. Please try again later.</p>';
     }
-}
+};
 
 
 
-getCurrMovies();
-displayWatchList();
+
 
