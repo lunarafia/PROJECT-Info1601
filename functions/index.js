@@ -16,7 +16,10 @@ const app = express();
 
 // Configure CORS before any routes
 const corsOptions = {
-    origin: 'https://whattowatch-4343a.web.app',
+    origin: [
+        'https://whattowatch-4343a.web.app',
+        'https://whattowatch-4343a.firebaseapp.com'
+      ],
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
